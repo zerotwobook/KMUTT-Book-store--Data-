@@ -188,12 +188,12 @@ void showStock(Book *head) {
 
     printf("Books in Stock:\n");
     printf("-------------------------------------------------------------------------------------------------------------\n");
-    printf("| %-5s | %-30s | %-20s | %-15s | %-5s | %-10s |\n", "ID", "Title", "Author", "Category", "Qty", "Price");
+    printf("| %-5s | %-30s | %-20s | %-15s | %-5s | %-10s      |\n", "ID", "Title", "Author", "Category", "Qty", "Price");
     printf("-------------------------------------------------------------------------------------------------------------\n");
 
     Book *current = head;
     while (current) {
-        printf("| %-5d | %-30s | %-20s | %-15s | %-5d | $%-9.2f |\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
+        printf("| %-5d | %-30s | %-20s | %-15s | %-5d | $%-9.2f      |\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
         current = current->next;
     }
 
@@ -209,7 +209,7 @@ void showOrders(OrderQueue *queue) {
 
     printf("Orders:\n");
     printf("-------------------------------------------------------------------------------------------------------------\n");
-    printf("| %-20s | %-30s | %-10s | %-10s |\n", "Username", "Book Title", "Quantity", "Status");
+    printf("| %-20s      | %-30s | %-10s | %-10s |\n", "Username", "Book Title", "Quantity", "Status");
     printf("-------------------------------------------------------------------------------------------------------------\n");
 
     Order *current = queue->front;
@@ -230,6 +230,7 @@ void showOrders(OrderQueue *queue) {
     scanf("%d", &confirmIndex);
 
     if (confirmIndex == 0) {
+        system("cls");
         printf("No order was submitted.\n");
         return;
     }
@@ -277,7 +278,7 @@ void showOrders(OrderQueue *queue) {
     }
 
     fclose(file);
-
+    system("cls");
     printf("Order for '%s' by '%s' has been confirmed and added to History_Order.csv.\n", current->bookTitle, current->username);
 }
 
@@ -393,14 +394,17 @@ void editStockBook() {
             printf("Error: Could not load books from Book_Stock.csv\n");
             return;
         }
-
-        printf("\nEdit Stock Book Menu:\n");
-        printf("1. Edit Book Details\n");
-        printf("2. Delete Book\n");
-        printf("3. Add Stock\n");
-        printf("4. Exit to Admin Menu\n");
+        printf("----------------------------------------------");
+        printf("\n|Edit Stock Book Menu:                       |\n");
+        printf("----------------------------------------------\n");
+        printf("|1. Edit Book Details                        |\n");
+        printf("|2. Delete Book                              |\n");
+        printf("|3. Add Stock                                |\n");
+        printf("|4. Exit to Admin Menu                       |\n");
+        printf("----------------------------------------------\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
+        system("cls");
 
         switch (choice) {
             case 1: { // Edit Book Details
@@ -434,7 +438,7 @@ void editStockBook() {
 
                         printf("Enter new price: ");
                         scanf("%f", &current->price);
-
+                        system("cls");
                         printf("Book details updated successfully.\n");
                         break;
                     }
@@ -464,6 +468,7 @@ void editStockBook() {
                             bookList = current->next;
                         }
                         free(current);
+                        system("cls");
                         printf("Book with ID %d deleted successfully.\n", id);
                         break;
                     }
@@ -496,6 +501,7 @@ void editStockBook() {
                         printf("Enter quantity to add: ");
                         scanf("%d", &quantityToAdd);
                         current->quantity += quantityToAdd;
+                        system("cls");
                         printf("Stock updated successfully. New stock: %d\n", current->quantity);
                         found = 1;
                         break;
@@ -540,6 +546,7 @@ void editStockBook() {
                         newBook->next = prev->next;
                         prev->next = newBook;
                     }
+                    system("cls");
             
                     printf("New book added successfully.\n");
                 }
@@ -586,14 +593,18 @@ void editStockBook() {
 void manageCoupons() {
     int choice;
     do {
-        printf("\nManage Coupons Menu:\n");
-        printf("1. Add Coupon\n");
-        printf("2. Edit Coupon\n");
-        printf("3. Delete Coupon\n");
-        printf("4. Show All Coupons\n");
-        printf("5. Exit to Admin Menu\n");
+        printf("\n----------------------------------------------");
+        printf("\n|Manage Coupons Menu:                        |\n");
+        printf("----------------------------------------------\n");
+        printf("|1. Add Coupon                               |\n");
+        printf("|2. Edit Coupon                              |\n");
+        printf("|3. Delete Coupon                            |\n");
+        printf("|4. Show All Coupons                         |\n");
+        printf("|5. Exit to Admin Menu                       |\n");
+        printf("----------------------------------------------\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
+        system("cls");
 
         switch (choice) {
             case 1: { // Add Coupon
@@ -612,6 +623,7 @@ void manageCoupons() {
 
                 fprintf(file, "%s,%.2f\n", code, discount);
                 fclose(file);
+                system("cls");
 
                 printf("Coupon added successfully.\n");
                 break;
@@ -659,9 +671,11 @@ void manageCoupons() {
                 if (found) {
                     remove("file/Coupon.csv");
                     rename("file/Coupon_temp.csv", "file/Coupon.csv");
+                    system("cls");
                     printf("Coupon updated successfully.\n");
                 } else {
                     remove("file/Coupon_temp.csv");
+                    system("cls");
                     printf("Coupon with code '%s' not found.\n", code);
                 }
                 break;
@@ -705,9 +719,11 @@ void manageCoupons() {
                 if (found) {
                     remove("file/Coupon.csv");
                     rename("file/Coupon_temp.csv", "file/Coupon.csv");
+                    system("cls");
                     printf("Coupon deleted successfully.\n");
                 } else {
                     remove("file/Coupon_temp.csv");
+                    system("cls");
                     printf("Coupon with code '%s' not found.\n", code);
                 }
                 break;
@@ -789,6 +805,7 @@ void manageAdmin() {
         scanf("%s", password);
 
         if (validateAdminCredentials(username, password)) {
+            system("cls");
             printf("Access Granted. Welcome, %s!\n", username);
 
             // Call the admin management menu
@@ -796,10 +813,11 @@ void manageAdmin() {
             return;
         } else {
             attempts--;
+            system("cls");
             printf("Invalid credentials. You have %d attempt(s) remaining.\n", attempts);
         }
     }
-
+    system("cls");
     printf("Access Denied. Returning to the main menu.\n");
 }
 
@@ -807,13 +825,17 @@ void manageAdmin() {
 void manageAdminMenu() {
     int choice;
     do {
-        printf("\nAdmin Management Menu:\n");
-        printf("1. Add Admin\n");
-        printf("2. Edit Admin\n");
-        printf("3. Delete Admin\n");
-        printf("4. Exit to Main Menu\n");
+        printf("----------------------------------------------");
+        printf("\n|Admin Management Menu:                      |\n");
+        printf("----------------------------------------------\n");
+        printf("|1. Add Admin                                |\n");
+        printf("|2. Edit Admin                               |\n");
+        printf("|3. Delete Admin                             |\n");
+        printf("|4. Exit to Main Menu                        |\n");
+        printf("----------------------------------------------\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
+        system("cls"); 
 
         switch (choice) {
             case 1: { // Add Admin
@@ -842,6 +864,7 @@ void manageAdminMenu() {
                 fclose(adminFile);
 
                 if (existsInAdmin) {
+                    system("cls"); 
                     printf("Username '%s' already exists. Please choose a different username.\n", newUsername);
                     break;
                 }
@@ -865,6 +888,7 @@ void manageAdminMenu() {
                 fclose(userFile);
 
                 if (existsInAccount) {
+                    system("cls"); 
                     printf("Username '%s' already exists. Please choose a different username.\n", newUsername);
                     break;
                 }
@@ -881,7 +905,7 @@ void manageAdminMenu() {
 
                 fprintf(file, "%s,%s\n", newUsername, newPassword);
                 fclose(file);
-
+                system("cls"); 
                 printf("New admin added successfully.\n");
                 break;
             }
@@ -925,9 +949,11 @@ void manageAdminMenu() {
                 if (found) {
                     remove("file/Admin_Password.csv");
                     rename("file/Admin_Password_temp.csv", "file/Admin_Password.csv");
+                    system("cls"); 
                     printf("Admin password updated successfully.\n");
                 } else {
                     remove("file/Admin_Password_temp.csv");
+                    system("cls"); 
                     printf("Admin with username '%s' not found.\n", editUsername);
                 }
                 break;
@@ -969,9 +995,11 @@ void manageAdminMenu() {
                 if (found) {
                     remove("file/Admin_Password.csv");
                     rename("file/Admin_Password_temp.csv", "file/Admin_Password.csv");
+                    system("cls"); 
                     printf("Admin with username '%s' deleted successfully.\n", deleteUsername);
                 } else {
                     remove("file/Admin_Password_temp.csv");
+                    system("cls"); 
                     printf("Admin with username '%s' not found.\n", deleteUsername);
                 }
                 break;
@@ -1087,19 +1115,23 @@ int main() {
     loadOrdersFromFile("file/Orderlist.csv", orderQueue);
 
     do {
-        printf("\nAdmin Menu:\n");
-        printf("1. Show Books\n");
-        printf("2. Show Orders\n");
-        printf("3. Show History Orders\n");
-        printf("4. Show Log Stock Book\n");
-        printf("5. Search Book\n");
-        printf("6. Edit Stock Book\n");
-        printf("7. Manage Coupons\n");
-        printf("8. Manage Admins\n");
-        printf("9. Generate Report\n");
-        printf("10. Exit\n");
-        printf("Enter your choice: ");
+        printf("\n----------------------------------------------");
+        printf("\n|                 Admin Menu                 |");
+        printf("\n----------------------------------------------");
+        printf("\n|  1. Show Books                             |");
+        printf("\n|  2. Show Orders                            |");
+        printf("\n|  3. Show History Orders                    |");
+        printf("\n|  4. Show Log Stock Book                    |");
+        printf("\n|  5. Search Book                            |");
+        printf("\n|  6. Edit Stock Book                        |");
+        printf("\n|  7. Manage Coupons                         |");
+        printf("\n|  8. Manage Admins                          |");
+        printf("\n|  9. Generate Report                        |");
+        printf("\n|  10. Exit                                  |");
+        printf("\n----------------------------------------------");
+        printf("\nEnter your choice: ");
         scanf("%d", &choice);
+        system("cls"); 
 
         switch (choice) {
             case 1:
