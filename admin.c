@@ -28,9 +28,50 @@ typedef struct OrderQueue {
     Order *rear;
 } OrderQueue;
 
+typedef struct History {
+    char username[50];
+    char bookTitle[100];
+    int quantity;
+    char status[20];
+    struct History *next;
+} History;
+
+typedef struct HistoryQueue {
+    History *front;
+    History *rear;
+} HistoryQueue;
+
+typedef struct Log {
+    char username[50];
+    char bookTitle[100];
+    int quantity;
+    float totalPrice;
+    struct Log *next;
+} Log;
+
+typedef struct LogQueue {
+    Log *front;
+    Log *rear;
+} LogQueue;
+
+// Function prototypes
+void manageAdminMenu(); // Add this prototype to fix the warning
+
 // Function to initialize the queue
 OrderQueue* createQueue() {
     OrderQueue *queue = (OrderQueue *)malloc(sizeof(OrderQueue));
+    queue->front = queue->rear = NULL;
+    return queue;
+}
+
+HistoryQueue* createHistoryQueue() {
+    HistoryQueue *queue = (HistoryQueue *)malloc(sizeof(HistoryQueue));
+    queue->front = queue->rear = NULL;
+    return queue;
+}
+
+LogQueue* createLogQueue() {
+    LogQueue *queue = (LogQueue *)malloc(sizeof(LogQueue));
     queue->front = queue->rear = NULL;
     return queue;
 }
@@ -51,6 +92,40 @@ void enqueue(OrderQueue *queue, char *username, char *bookTitle, int quantity, c
 
     queue->rear->next = newOrder;
     queue->rear = newOrder;
+}
+
+void enqueueHistory(HistoryQueue *queue, char *username, char *bookTitle, int quantity, char *status) {
+    History *newNode = (History *)malloc(sizeof(History));
+    strcpy(newNode->username, username);
+    strcpy(newNode->bookTitle, bookTitle);
+    newNode->quantity = quantity;
+    strcpy(newNode->status, status);
+    newNode->next = NULL;
+
+    if (!queue->rear) {
+        queue->front = queue->rear = newNode;
+        return;
+    }
+
+    queue->rear->next = newNode;
+    queue->rear = newNode;
+}
+
+void enqueueLog(LogQueue *queue, char *username, char *bookTitle, int quantity, float totalPrice) {
+    Log *newNode = (Log *)malloc(sizeof(Log));
+    strcpy(newNode->username, username);
+    strcpy(newNode->bookTitle, bookTitle);
+    newNode->quantity = quantity;
+    newNode->totalPrice = totalPrice;
+    newNode->next = NULL;
+
+    if (!queue->rear) {
+        queue->front = queue->rear = newNode;
+        return;
+    }
+
+    queue->rear->next = newNode;
+    queue->rear = newNode;
 }
 
 // Function to load orders from Orderlist.csv into the queue
@@ -278,6 +353,26 @@ void freeOrderQueue(OrderQueue *queue) {
     free(queue);
 }
 
+void freeHistoryQueue(HistoryQueue *queue) {
+    History *current = queue->front;
+    while (current) {
+        History *temp = current;
+        current = current->next;
+        free(temp);
+    }
+    free(queue);
+}
+
+void freeLogQueue(LogQueue *queue) {
+    Log *current = queue->front;
+    while (current) {
+        Log *temp = current;
+        current = current->next;
+        free(temp);
+    }
+    free(queue);
+}
+
 void editStockBook() {
     int choice;
     printf("\nEdit Stock Book Menu:\n");
@@ -416,6 +511,449 @@ void editStockBook() {
     printf("Changes saved successfully.\n");
 }
 
+void manageCoupons() {
+    int choice;
+    do {
+        printf("\nManage Coupons Menu:\n");
+        printf("1. Add Coupon\n");
+        printf("2. Edit Coupon\n");
+        printf("3. Delete Coupon\n");
+        printf("4. Show All Coupons\n");
+        printf("5. Exit to Admin Menu\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: { // Add Coupon
+                char code[50];
+                float discount;
+                printf("Enter coupon code: ");
+                scanf("%s", code);
+                printf("Enter discount percentage (e.g., 10 for 10%%): ");
+                scanf("%f", &discount);
+
+                FILE *file = fopen("file/Coupon.csv", "a");
+                if (!file) {
+                    printf("Error: Could not open Coupon.csv\n");
+                    return;
+                }
+
+                fprintf(file, "%s,%.2f\n", code, discount);
+                fclose(file);
+
+                printf("Coupon added successfully.\n");
+                break;
+            }
+            case 2: { // Edit Coupon
+                char code[50];
+                float newDiscount;
+                printf("Enter the coupon code to edit: ");
+                scanf("%s", code);
+
+                FILE *file = fopen("file/Coupon.csv", "r");
+                if (!file) {
+                    printf("Error: Could not open Coupon.csv\n");
+                    return;
+                }
+
+                FILE *tempFile = fopen("file/Coupon_temp.csv", "w");
+                if (!tempFile) {
+                    printf("Error: Could not create temporary file.\n");
+                    fclose(file);
+                    return;
+                }
+
+                char line[256];
+                int found = 0;
+                while (fgets(line, sizeof(line), file)) {
+                    char existingCode[50];
+                    float discount;
+
+                    sscanf(line, "%[^,],%f", existingCode, &discount);
+
+                    if (strcmp(existingCode, code) == 0) {
+                        printf("Enter new discount percentage for '%s': ", code);
+                        scanf("%f", &newDiscount);
+                        fprintf(tempFile, "%s,%.2f\n", code, newDiscount);
+                        found = 1;
+                    } else {
+                        fprintf(tempFile, "%s,%.2f\n", existingCode, discount);
+                    }
+                }
+
+                fclose(file);
+                fclose(tempFile);
+
+                if (found) {
+                    remove("file/Coupon.csv");
+                    rename("file/Coupon_temp.csv", "file/Coupon.csv");
+                    printf("Coupon updated successfully.\n");
+                } else {
+                    remove("file/Coupon_temp.csv");
+                    printf("Coupon with code '%s' not found.\n", code);
+                }
+                break;
+            }
+            case 3: { // Delete Coupon
+                char code[50];
+                printf("Enter the coupon code to delete: ");
+                scanf("%s", code);
+
+                FILE *file = fopen("file/Coupon.csv", "r");
+                if (!file) {
+                    printf("Error: Could not open Coupon.csv\n");
+                    return;
+                }
+
+                FILE *tempFile = fopen("file/Coupon_temp.csv", "w");
+                if (!tempFile) {
+                    printf("Error: Could not create temporary file.\n");
+                    fclose(file);
+                    return;
+                }
+
+                char line[256];
+                int found = 0;
+                while (fgets(line, sizeof(line), file)) {
+                    char existingCode[50];
+                    float discount;
+
+                    sscanf(line, "%[^,],%f", existingCode, &discount);
+
+                    if (strcmp(existingCode, code) == 0) {
+                        found = 1;
+                    } else {
+                        fprintf(tempFile, "%s,%.2f\n", existingCode, discount);
+                    }
+                }
+
+                fclose(file);
+                fclose(tempFile);
+
+                if (found) {
+                    remove("file/Coupon.csv");
+                    rename("file/Coupon_temp.csv", "file/Coupon.csv");
+                    printf("Coupon deleted successfully.\n");
+                } else {
+                    remove("file/Coupon_temp.csv");
+                    printf("Coupon with code '%s' not found.\n", code);
+                }
+                break;
+            }
+            case 4: { // Show All Coupons
+                FILE *file = fopen("file/Coupon.csv", "r");
+                if (!file) {
+                    printf("Error: Could not open Coupon.csv\n");
+                    return;
+                }
+
+                printf("Available Coupons:\n");
+                printf("---------------------------------------------------\n");
+                printf("| %-20s | %-10s |\n", "Coupon Code", "Discount (%)");
+                printf("---------------------------------------------------\n");
+
+                char line[256];
+                while (fgets(line, sizeof(line), file)) {
+                    char code[50];
+                    float discount;
+
+                    // Parse the line to extract coupon details
+                    sscanf(line, "%[^,],%f", code, &discount);
+
+                    // Display the coupon
+                    printf("| %-20s | %-10.2f |\n", code, discount);
+                }
+
+                printf("---------------------------------------------------\n");
+
+                fclose(file);
+                break;
+            }
+            case 5: // Exit to Admin Menu
+                printf("Returning to Admin Menu...\n");
+                return;
+            default:
+                printf("Invalid choice. Please try again.\n");
+                break;
+        }
+    } while (choice != 5);
+}
+
+// Function to validate admin credentials
+int validateAdminCredentials(const char *username, const char *password) {
+    FILE *file = fopen("file/Admin_Password.csv", "r");
+    if (!file) {
+        printf("Error: Could not open Admin_Password.csv\n");
+        return 0;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        char storedUsername[50], storedPassword[50];
+
+        // Parse the line to extract username and password
+        sscanf(line, "%[^,],%s", storedUsername, storedPassword);
+
+        // Check if the entered username and password match
+        if (strcmp(username, storedUsername) == 0 && strcmp(password, storedPassword) == 0) {
+            fclose(file);
+            return 1; // Credentials are valid
+        }
+    }
+
+    fclose(file);
+    return 0; // Credentials are invalid
+}
+
+// Function to manage admin access
+void manageAdmin() {
+    char username[50], password[50];
+    int attempts = 3;
+
+    while (attempts > 0) {
+        printf("Enter Admin Username: ");
+        scanf("%s", username);
+        printf("Enter Admin Password: ");
+        scanf("%s", password);
+
+        if (validateAdminCredentials(username, password)) {
+            printf("Access Granted. Welcome, %s!\n", username);
+
+            // Call the admin management menu
+            manageAdminMenu();
+            return;
+        } else {
+            attempts--;
+            printf("Invalid credentials. You have %d attempt(s) remaining.\n", attempts);
+        }
+    }
+
+    printf("Access Denied. Returning to the main menu.\n");
+}
+
+// Function to manage admin menu
+void manageAdminMenu() {
+    int choice;
+    do {
+        printf("\nAdmin Management Menu:\n");
+        printf("1. Add Admin\n");
+        printf("2. Edit Admin\n");
+        printf("3. Delete Admin\n");
+        printf("4. Exit to Main Menu\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: {
+                char newUsername[50], newPassword[50];
+                printf("Enter new admin username: ");
+                scanf("%s", newUsername);
+                printf("Enter new admin password: ");
+                scanf("%s", newPassword);
+
+                FILE *file = fopen("file/Admin_Password.csv", "a");
+                if (!file) {
+                    printf("Error: Could not open Admin_Password.csv\n");
+                    return;
+                }
+
+                fprintf(file, "%s,%s\n", newUsername, newPassword);
+                fclose(file);
+
+                printf("New admin added successfully.\n");
+                break;
+            }
+            case 2: {
+                char editUsername[50], newPassword[50];
+                printf("Enter the username of the admin to edit: ");
+                scanf("%s", editUsername);
+
+                FILE *file = fopen("file/Admin_Password.csv", "r");
+                if (!file) {
+                    printf("Error: Could not open Admin_Password.csv\n");
+                    return;
+                }
+
+                FILE *tempFile = fopen("file/Admin_Password_temp.csv", "w");
+                if (!tempFile) {
+                    printf("Error: Could not create temporary file.\n");
+                    fclose(file);
+                    return;
+                }
+
+                char line[256];
+                int found = 0;
+                while (fgets(line, sizeof(line), file)) {
+                    char storedUsername[50], storedPassword[50];
+                    sscanf(line, "%[^,],%s", storedUsername, storedPassword);
+
+                    if (strcmp(storedUsername, editUsername) == 0) {
+                        printf("Enter new password for '%s': ", editUsername);
+                        scanf("%s", newPassword);
+                        fprintf(tempFile, "%s,%s\n", storedUsername, newPassword);
+                        found = 1;
+                    } else {
+                        fprintf(tempFile, "%s,%s\n", storedUsername, storedPassword);
+                    }
+                }
+
+                fclose(file);
+                fclose(tempFile);
+
+                if (found) {
+                    remove("file/Admin_Password.csv");
+                    rename("file/Admin_Password_temp.csv", "file/Admin_Password.csv");
+                    printf("Admin password updated successfully.\n");
+                } else {
+                    remove("file/Admin_Password_temp.csv");
+                    printf("Admin with username '%s' not found.\n", editUsername);
+                }
+                break;
+            }
+            case 3: {
+                char deleteUsername[50];
+                printf("Enter the username of the admin to delete: ");
+                scanf("%s", deleteUsername);
+
+                FILE *file = fopen("file/Admin_Password.csv", "r");
+                if (!file) {
+                    printf("Error: Could not open Admin_Password.csv\n");
+                    return;
+                }
+
+                FILE *tempFile = fopen("file/Admin_Password_temp.csv", "w");
+                if (!tempFile) {
+                    printf("Error: Could not create temporary file.\n");
+                    fclose(file);
+                    return;
+                }
+
+                char line[256];
+                int found = 0;
+                while (fgets(line, sizeof(line), file)) {
+                    char storedUsername[50], storedPassword[50];
+                    sscanf(line, "%[^,],%s", storedUsername, storedPassword);
+
+                    if (strcmp(storedUsername, deleteUsername) == 0) {
+                        found = 1;
+                    } else {
+                        fprintf(tempFile, "%s,%s\n", storedUsername, storedPassword);
+                    }
+                }
+
+                fclose(file);
+                fclose(tempFile);
+
+                if (found) {
+                    remove("file/Admin_Password.csv");
+                    rename("file/Admin_Password_temp.csv", "file/Admin_Password.csv");
+                    printf("Admin with username '%s' deleted successfully.\n", deleteUsername);
+                } else {
+                    remove("file/Admin_Password_temp.csv");
+                    printf("Admin with username '%s' not found.\n", deleteUsername);
+                }
+                break;
+            }
+            case 4:
+                printf("Returning to Main Menu...\n");
+                return;
+            default:
+                printf("Invalid choice. Please try again.\n");
+                break;
+        }
+    } while (choice != 4);
+}
+
+void loadHistoryQueue(const char *filename, HistoryQueue *queue) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error: Could not open %s\n", filename);
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        char username[50], bookTitle[100], status[20];
+        int quantity;
+
+        sscanf(line, "%[^,],%[^,],%d,%[^,\n]", username, bookTitle, &quantity, status);
+        enqueueHistory(queue, username, bookTitle, quantity, status);
+    }
+
+    fclose(file);
+}
+
+void loadLogQueue(const char *filename, LogQueue *queue) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error: Could not open %s\n", filename);
+        return;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        char username[50], bookTitle[100];
+        int quantity;
+        float totalPrice;
+
+        sscanf(line, "%[^,],%[^,],%d,%f", username, bookTitle, &quantity, &totalPrice);
+        enqueueLog(queue, username, bookTitle, quantity, totalPrice);
+    }
+
+    fclose(file);
+}
+
+void generateReport() {
+    HistoryQueue *historyQueue = createHistoryQueue();
+    LogQueue *logQueue = createLogQueue();
+
+    // Load data into queues
+    loadHistoryQueue("file/History_Order.csv", historyQueue);
+    loadLogQueue("file/Log_Stockbook.csv", logQueue);
+
+    int totalOrders = 0, totalBooksSold = 0;
+    float totalRevenue = 0.0;
+
+    // Display History of Orders
+    printf("\nHistory of Orders:\n");
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+    printf("| %-20s | %-30s | %-10s | %-10s |\n", "Username", "Book Title", "Quantity", "Status");
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+
+    History *currentHistory = historyQueue->front;
+    while (currentHistory) {
+        printf("| %-20s | %-30s | %-10d | %-10s |\n", currentHistory->username, currentHistory->bookTitle, currentHistory->quantity, currentHistory->status);
+        totalOrders++;
+        totalBooksSold += currentHistory->quantity;
+        currentHistory = currentHistory->next;
+    }
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+
+    // Display Log of Stock Transactions
+    printf("\nLog of Stock Transactions:\n");
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+    printf("| %-20s | %-30s | %-10s | %-10s |\n", "Username", "Book Title", "Quantity", "Total Price");
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+
+    Log *currentLog = logQueue->front;
+    while (currentLog) {
+        printf("| %-20s | %-30s | %-10d | $%-9.2f |\n", currentLog->username, currentLog->bookTitle, currentLog->quantity, currentLog->totalPrice);
+        totalRevenue += currentLog->totalPrice;
+        currentLog = currentLog->next;
+    }
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+
+    // Display Summary
+    printf("\nSummary:\n");
+    printf("Total Orders: %d\n", totalOrders);
+    printf("Total Books Sold: %d\n", totalBooksSold);
+    printf("Total Revenue: $%.2f\n", totalRevenue);
+
+    // Free the queues
+    freeHistoryQueue(historyQueue);
+    freeLogQueue(logQueue);
+}
+
 int main() {
     int choice;
 
@@ -434,7 +972,10 @@ int main() {
         printf("4. Show Log Stock Book\n");
         printf("5. Search Book\n");
         printf("6. Edit Stock Book\n");
-        printf("7. Exit\n");
+        printf("7. Manage Coupons\n");
+        printf("8. Manage Admins\n");
+        printf("9. Generate Report\n");
+        printf("10. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
@@ -456,9 +997,18 @@ int main() {
                 exit(0);
                 break;
             case 6:
-                editStockBook(); // Call the editStockBook function
+                editStockBook();
                 break;
             case 7:
+                manageCoupons();
+                break;
+            case 8:
+                manageAdmin(); // Call the manageAdmin function
+                break;
+            case 9:
+                generateReport();
+                break;
+            case 10:
                 printf("Exiting...\n");
                 system("login.exe"); // Call the login program
                 exit(0); // Exit the current program
@@ -466,7 +1016,7 @@ int main() {
             default:
                 printf("Invalid choice. Please try again.\n");
         }
-    } while (choice != 7);
+    } while (choice != 10);
 
     // Free the linked list and the queue
     freeBookList(bookList);
