@@ -17,9 +17,11 @@ typedef struct Book {
 void createAccount() {
     char username[50], password[50];
     char line[MAX_LINE];
-
+    printf("--------------------------\n");
     printf("Enter username: ");
     scanf("%s", username);
+    printf("-------------------------\n");
+    system("cls");
 
     // Check if the username already exists in Admin_Password.csv
     FILE *adminFile = fopen("file/Admin_Password.csv", "r");
@@ -58,8 +60,11 @@ void createAccount() {
     fclose(userFile);
 
     // If the username is unique, proceed to create the account
+    printf("-------------------------\n");
     printf("Enter password: ");
     scanf("%s", password);
+    printf("-------------------------\n");
+    system("cls");
 
     FILE *file = fopen("file/Account.csv", "a");
     if (!file) {
@@ -76,11 +81,13 @@ void login() {
     char username[50], password[50];
     char line[MAX_LINE];
     int isAdmin = 0;
-
+    printf("-------------------------\n");
     printf("Enter username: ");
     scanf("%s", username);
     printf("Enter password: ");
     scanf("%s", password);
+    printf("-------------------------\n");
+    system("cls");
 
     // Check Admin_Password.csv for admin credentials
     FILE *adminFile = fopen("file/Admin_Password.csv", "r"); // Updated path
@@ -167,12 +174,12 @@ void showBooks() {
 
     printf("\nBooks in Stock:\n");
     printf("-------------------------------------------------------------------------------------------------------------\n");
-    printf("| %-5s | %-30s | %-20s | %-15s | %-5s | %-10s |\n", "ID", "Title", "Author", "Category", "Qty", "Price");
+    printf("| %-5s | %-30s | %-20s | %-15s | %-5s | %-10s      |\n", "ID", "Title", "Author", "Category", "Qty", "Price");
     printf("-------------------------------------------------------------------------------------------------------------\n");
 
     Book *current = bookList;
     while (current) {
-        printf("| %-5d | %-30s | %-20s | %-15s | %-5d | $%-9.2f |\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
+        printf("| %-5d | %-30s | %-20s | %-15s | %-5d | $%-9.2f      |\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
         current = current->next;
     }
 
@@ -189,27 +196,35 @@ void showBooks() {
 int main() {
     int choice;
     do {
-        printf("\n1. Login\n2. Create Account\n3. Show Books\n4. Exit\n");
-        printf("Enter your choice: ");
+        printf("\n----------------------------------------------");
+        printf("\n|        WELCOME TO THE BOOK STORE           |");
+        printf("\n----------------------------------------------");
+        printf("\n|  1. Login                                  |");
+        printf("\n|  2. Create Account                         |");
+        printf("\n|  3. Show Books                             |");
+        printf("\n|  4. Exit                                   |");
+        printf("\n----------------------------------------------");
+        printf("\nEnter your choice (1-4): ");
         scanf("%d", &choice);
+        system("cls"); 
+    switch (choice) {
+        case 1:
+            login();
+            break;
+        case 2:
+            createAccount();
+            break;
+        case 3:
+            showBooks(); 
+            break;
+        case 4:
+            printf("Exiting...\n");
+            break;
+        default:
+            printf("Invalid choice. Try again.\n");
+    }
+} while (choice != 4);
 
-        switch (choice) {
-            case 1:
-                login();
-                break;
-            case 2:
-                createAccount();
-                break;
-            case 3:
-                showBooks(); 
-                break;
-            case 4:
-                printf("Exiting\n");
-                break;
-            default:
-                printf("Invalid choice. Try again.\n");
-        }
-    } while (choice != 4);
-
-    return 0;
+return 0;
 }
+
