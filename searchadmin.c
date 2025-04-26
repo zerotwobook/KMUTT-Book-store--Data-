@@ -3,9 +3,15 @@
 #include <string.h>
 #include <ctype.h>
 
-// Define the structure for a tree node
+void cls() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
+
 typedef struct TreeNode {
-    char key[100]; // Key for searching (can be category or title)
     int id;
     char title[100];
     char author[100];
@@ -16,13 +22,8 @@ typedef struct TreeNode {
     struct TreeNode *right;
 } TreeNode;
 
-// Function prototypes
-void freeTree(TreeNode *root); // Add this prototype to fix the warning
-
-// Function to create a new tree node
-TreeNode* createTreeNode(char *key, int id, char *title, char *author, char *category, int quantity, float price) {
+TreeNode* createTreeNode(int id, char *title, char *author, char *category, int quantity, float price) {
     TreeNode *newNode = (TreeNode *)malloc(sizeof(TreeNode));
-    strcpy(newNode->key, key);
     newNode->id = id;
     strcpy(newNode->title, title);
     strcpy(newNode->author, author);
@@ -33,43 +34,50 @@ TreeNode* createTreeNode(char *key, int id, char *title, char *author, char *cat
     return newNode;
 }
 
-// Function to insert a node into the tree
-TreeNode* insertTreeNode(TreeNode *root, char *key, int id, char *title, char *author, char *category, int quantity, float price) {
+TreeNode* insertTreeNode(TreeNode *root, int id, char *title, char *author, char *category, int quantity, float price) {
     if (root == NULL) {
-        return createTreeNode(key, id, title, author, category, quantity, price);
+        return createTreeNode(id, title, author, category, quantity, price);
     }
 
-    if (strcmp(key, root->key) < 0) {
-        root->left = insertTreeNode(root->left, key, id, title, author, category, quantity, price);
+    if (id < root->id) {
+        root->left = insertTreeNode(root->left, id, title, author, category, quantity, price);
     } else {
-        root->right = insertTreeNode(root->right, key, id, title, author, category, quantity, price);
+        root->right = insertTreeNode(root->right, id, title, author, category, quantity, price);
     }
 
     return root;
 }
 
-// Function to search for a node in the tree
+void printAllBooks(TreeNode *root) {
+    if (root == NULL) {
+        return;
+    }
+
+    printAllBooks(root->left);
+
+    printf("| %-5d | %-30s | %-15s | %-6d | $%-8.2f |\n",
+           root->id, root->title, root->category, root->quantity, root->price);
+
+    printAllBooks(root->right);
+}
+
 void searchTree(TreeNode *root, char *key, int searchByCategory) {
     if (root == NULL) {
         return;
     }
 
-    // Traverse the left subtree
     searchTree(root->left, key, searchByCategory);
 
-    // Check if the current node matches the search key
-    if ((searchByCategory && strcmp(root->category, key) == 0) || (!searchByCategory && strcmp(root->key, key) == 0)) {
-        printf("Book Found:\n");
-        printf("ID: %d\nTitle: %s\nAuthor: %s\nCategory: %s\nQuantity: %d\nPrice: $%.2f\n\n",
-               root->id, root->title, root->author, root->category, root->quantity, root->price);
+    if ((searchByCategory && strcmp(root->category, key) == 0) || 
+        (!searchByCategory && strstr(root->title, key) != NULL)) {
+        printf("| %-5d | %-30s | %-15s | %-6d | $%-8.2f |\n",
+               root->id, root->title, root->category, root->quantity, root->price);
     }
 
-    // Traverse the right subtree
     searchTree(root->right, key, searchByCategory);
 }
 
-// Function to load books from Book_Stock.csv into the tree
-TreeNode* loadBooksIntoTree(const char *filename, int searchByCategory) {
+TreeNode* loadBooksIntoTree(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         printf("Error opening %s\n", filename);
@@ -78,98 +86,94 @@ TreeNode* loadBooksIntoTree(const char *filename, int searchByCategory) {
 
     TreeNode *root = NULL;
     char line[256];
-    fgets(line, sizeof(line), file); // Skip header line
+    fgets(line, sizeof(line), file); // skip header
     while (fgets(line, sizeof(line), file)) {
         int id, quantity;
         char title[100], author[100], category[50];
         float price;
         sscanf(line, "%d,%[^,],%[^,],%[^,],%d,%f", &id, title, author, category, &quantity, &price);
 
-        // Use category or title as the key based on the user's choice
-        char *key = searchByCategory ? category : title;
-        root = insertTreeNode(root, key, id, title, author, category, quantity, price);
+        root = insertTreeNode(root, id, title, author, category, quantity, price);
     }
 
     fclose(file);
     return root;
 }
 
-// Function to search books by category or title
-void searchBooks() {
-    int choice;
-    printf("Search Books by:\n");
-    printf("1. Category\n");
-    printf("2. Title\n");
-    printf("3. Exit to Admin Menu\n"); // Update the exit option
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
-
-    if (choice == 3) {
-        printf("Returning to the Admin Menu...\n");
-        return; // Return control to the calling function
-    }
-
-    if (choice != 1 && choice != 2) {
-        printf("Invalid choice.\n");
-        return;
-    }
-
-    // Load books into the tree based on the user's choice
-    TreeNode *root = loadBooksIntoTree("file/Book_Stock.csv", choice == 1);
-
-    char key[100];
-    printf("Enter the %s to search (or type 'exit' to return to the Admin Menu): ", choice == 1 ? "category" : "title");
-    getchar(); // Clear newline from buffer
-    fgets(key, sizeof(key), stdin);
-    key[strcspn(key, "\n")] = '\0'; // Remove newline
-
-    // Check if the user wants to exit
-    if (strcmp(key, "exit") == 0) {
-        printf("Returning to the Admin Menu...\n");
-        return; // Return control to the calling function
-    }
-
-    // Search for the book(s)
-    printf("\nSearch Results:\n");
-    searchTree(root, key, choice == 1);
-
-    // Free the tree after searching
-    freeTree(root);
-}
-
-// Function to free the tree
 void freeTree(TreeNode *root) {
     if (root == NULL) {
         return;
     }
-
     freeTree(root->left);
     freeTree(root->right);
     free(root);
 }
 
-int main() {
-    char userInput[10]; // Buffer to store user input
-    int exitFlag = 0;   // Flag to control the loop
+void searchBooks() {
+    cls();
+    printf("+---------------------------------------+\n");
+    printf("|          BOOK SEARCH MENU             |\n");
+    printf("+---------------------------------------+\n");
+    printf("| 1. Search by Category                 |\n");
+    printf("| 2. Search by Title                    |\n");
+    printf("| 3. Return to Admin Menu                |\n");
+    printf("+---------------------------------------+\n");
+    printf("Enter your choice: ");
 
-    while (!exitFlag) {
-        searchBooks(); // Call the searchBooks function
+    int choice;
+    scanf("%d", &choice);
+    getchar();
 
-        printf("\nDo you want to search again? (yes or no): ");
-        scanf("%s", userInput); // Read user input
-
-        // Convert input to lowercase for case-insensitive comparison
-        for (int i = 0; userInput[i]; i++) {
-            userInput[i] = tolower(userInput[i]);
-        }
-
-        // Check if the user entered "no"
-        if (strcmp(userInput, "no") == 0) {
-            exitFlag = 1; // Exit the loop
-        }
+    if (choice == 3) {
+        printf("Returning to the Admin Menu...\n");
+        system("admin.exe");
+        exit(0);
     }
 
-    printf("Returning to the Admin.\n");
-    system("admin.exe"); // Assuming main.c is compiled into main.exe
+    if (choice != 1 && choice != 2) {
+        printf("Invalid choice.\n");
+        printf("Press Enter to continue...");
+        getchar();
+        return;
+    }
+
+    TreeNode *root = loadBooksIntoTree("file/Book_Stock.csv");
+
+    cls();
+    printf("CURRENT STOCK:\n");
+    printf("+=======+================================+=================+========+==========+\n");
+    printf("| %-5s | %-30s | %-15s | %-6s | %-8s |\n", "ID", "Title", "Category", "Stock", "Price");
+    printf("+=======+================================+=================+========+==========+\n");
+
+    printAllBooks(root); // SHOW ALL BOOKS BY ID
+
+    printf("+=======+================================+=================+========+==========+\n");
+
+    printf("Enter the %s to search: ", choice == 1 ? "category" : "title");
+
+    char key[100];
+    fgets(key, sizeof(key), stdin);
+    key[strcspn(key, "\n")] = '\0';
+
+    cls();
+    printf("SEARCH RESULT:\n");
+    printf("+=======+================================+=================+========+==========+\n");
+    printf("| %-5s | %-30s | %-15s | %-6s | %-8s |\n", "ID", "Title", "Category", "Stock", "Price");
+    printf("+=======+================================+=================+========+==========+\n");
+
+    searchTree(root, key, choice == 1);
+
+    printf("+=======+================================+=================+========+==========+\n");
+
+    freeTree(root);
+
+    printf("\nPress Enter to continue...");
+    getchar();
+}
+
+int main() {
+    while (1) {
+        searchBooks();
+    }
     return 0;
 }
