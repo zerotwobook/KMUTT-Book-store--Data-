@@ -4,6 +4,16 @@
 
 #define MAX_LINE 256
 
+typedef struct Book {
+    int id;
+    char title[100];
+    char author[100];
+    char category[50];
+    int quantity;
+    float price;
+    struct Book *next;
+} Book;
+
 void createAccount() {
     char username[50], password[50];
     FILE *file = fopen("file/Account.csv", "a"); // Updated path
@@ -89,10 +99,64 @@ void login() {
     }
 }
 
+Book* loadBooksFromFile(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error: Could not open %s\n", filename);
+        return NULL;
+    }
+
+    Book *head = NULL, *tail = NULL;
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        Book *newBook = (Book *)malloc(sizeof(Book));
+        sscanf(line, "%d,%[^,],%[^,],%[^,],%d,%f", &newBook->id, newBook->title, newBook->author, newBook->category, &newBook->quantity, &newBook->price);
+        newBook->next = NULL;
+
+        if (!head) {
+            head = newBook;
+            tail = newBook;
+        } else {
+            tail->next = newBook;
+            tail = newBook;
+        }
+    }
+
+    fclose(file);
+    return head;
+}
+
+void showBooks() {
+    Book *bookList = loadBooksFromFile("file/Book_Stock.csv");
+    if (!bookList) {
+        return;
+    }
+
+    printf("\nBooks in Stock:\n");
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+    printf("| %-5s | %-30s | %-20s | %-15s | %-5s | %-10s |\n", "ID", "Title", "Author", "Category", "Qty", "Price");
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+
+    Book *current = bookList;
+    while (current) {
+        printf("| %-5d | %-30s | %-20s | %-15s | %-5d | $%-9.2f |\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
+        current = current->next;
+    }
+
+    printf("-------------------------------------------------------------------------------------------------------------\n");
+
+    // Free the linked list
+    while (bookList) {
+        Book *temp = bookList;
+        bookList = bookList->next;
+        free(temp);
+    }
+}
+
 int main() {
     int choice;
     do {
-        printf("\n1. Login\n2. Create Account\n3. Exit\n");
+        printf("\n1. Login\n2. Create Account\n3. Show Books\n4. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
@@ -104,12 +168,15 @@ int main() {
                 createAccount();
                 break;
             case 3:
+                showBooks(); 
+                break;
+            case 4:
                 printf("Exiting...\n");
                 break;
             default:
                 printf("Invalid choice. Try again.\n");
         }
-    } while (choice != 3);
+    } while (choice != 4);
 
     return 0;
 }
