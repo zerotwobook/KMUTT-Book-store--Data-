@@ -16,21 +16,54 @@ typedef struct Book {
 
 void createAccount() {
     char username[50], password[50];
-    FILE *file = fopen("file/Account.csv", "a"); // Updated path
-    if (!file) {
+    char line[MAX_LINE];
+
+    printf("Enter username: ");
+    scanf("%s", username);
+
+    // Check if the username already exists in Admin_Password.csv
+    FILE *adminFile = fopen("file/Admin_Password.csv", "r");
+    if (!adminFile) {
+        printf("Error opening file/Admin_Password.csv\n");
+        return;
+    }
+
+    while (fgets(line, MAX_LINE, adminFile)) {
+        char adminUser[50], adminPass[50];
+        sscanf(line, "%[^,],%s", adminUser, adminPass);
+        if (strcmp(username, adminUser) == 0) {
+            printf("Username '%s' already exists. Please choose a different username.\n", username);
+            fclose(adminFile);
+            return;
+        }
+    }
+    fclose(adminFile);
+
+    // Check if the username already exists in Account.csv
+    FILE *userFile = fopen("file/Account.csv", "r");
+    if (!userFile) {
         printf("Error opening file/Account.csv\n");
         return;
     }
 
-    printf("Enter username: ");
-    scanf("%s", username);
+    while (fgets(line, MAX_LINE, userFile)) {
+        char user[50], pass[50];
+        sscanf(line, "%[^,],%s", user, pass);
+        if (strcmp(username, user) == 0) {
+            printf("Username '%s' already exists. Please choose a different username.\n", username);
+            fclose(userFile);
+            return;
+        }
+    }
+    fclose(userFile);
+
+    // If the username is unique, proceed to create the account
     printf("Enter password: ");
     scanf("%s", password);
 
-    // Prevent creating an admin account
-    if (strcmp(username, "admin") == 0) {
-        printf("Cannot create an admin account here.\n");
-        fclose(file);
+    FILE *file = fopen("file/Account.csv", "a");
+    if (!file) {
+        printf("Error opening file/Account.csv\n");
         return;
     }
 
@@ -171,7 +204,7 @@ int main() {
                 showBooks(); 
                 break;
             case 4:
-                printf("Exiting...\n");
+                printf("Exiting\n");
                 break;
             default:
                 printf("Invalid choice. Try again.\n");

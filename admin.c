@@ -253,6 +253,16 @@ void showOrders(OrderQueue *queue) {
     // Update the status of the selected order
     strcpy(current->status, "Confirmed");
 
+    // Append the confirmed order to History_Order.csv
+    FILE *historyFile = fopen("file/History_Order.csv", "a");
+    if (!historyFile) {
+        printf("Error: Could not open History_Order.csv\n");
+        return;
+    }
+
+    fprintf(historyFile, "%s,%s,%d,%s\n", current->username, current->bookTitle, current->quantity, current->status);
+    fclose(historyFile);
+
     // Rewrite the Orderlist.csv file with the updated status
     FILE *file = fopen("file/Orderlist.csv", "w");
     if (!file) {
@@ -268,7 +278,7 @@ void showOrders(OrderQueue *queue) {
 
     fclose(file);
 
-    printf("Order for '%s' by '%s' has been confirmed and updated in Orderlist.csv.\n", current->bookTitle, current->username);
+    printf("Order for '%s' by '%s' has been confirmed and added to History_Order.csv.\n", current->bookTitle, current->username);
 }
 
 // Function to display the history of orders from History_Order.csv
@@ -744,10 +754,60 @@ void manageAdminMenu() {
         scanf("%d", &choice);
 
         switch (choice) {
-            case 1: {
+            case 1: { // Add Admin
                 char newUsername[50], newPassword[50];
+                char line[256];
+
                 printf("Enter new admin username: ");
                 scanf("%s", newUsername);
+
+                // Check if the username already exists in Admin_Password.csv
+                FILE *adminFile = fopen("file/Admin_Password.csv", "r");
+                if (!adminFile) {
+                    printf("Error: Could not open Admin_Password.csv\n");
+                    return;
+                }
+
+                int existsInAdmin = 0;
+                while (fgets(line, sizeof(line), adminFile)) {
+                    char adminUser[50], adminPass[50];
+                    sscanf(line, "%[^,],%s", adminUser, adminPass);
+                    if (strcmp(newUsername, adminUser) == 0) {
+                        existsInAdmin = 1;
+                        break;
+                    }
+                }
+                fclose(adminFile);
+
+                if (existsInAdmin) {
+                    printf("Username '%s' already exists. Please choose a different username.\n", newUsername);
+                    break;
+                }
+
+                // Check if the username already exists in Account.csv
+                FILE *userFile = fopen("file/Account.csv", "r");
+                if (!userFile) {
+                    printf("Error: Could not open Account.csv\n");
+                    return;
+                }
+
+                int existsInAccount = 0;
+                while (fgets(line, sizeof(line), userFile)) {
+                    char user[50], pass[50];
+                    sscanf(line, "%[^,],%s", user, pass);
+                    if (strcmp(newUsername, user) == 0) {
+                        existsInAccount = 1;
+                        break;
+                    }
+                }
+                fclose(userFile);
+
+                if (existsInAccount) {
+                    printf("Username '%s' already exists. Please choose a different username.\n", newUsername);
+                    break;
+                }
+
+                // If the username is unique, proceed to add the admin
                 printf("Enter new admin password: ");
                 scanf("%s", newPassword);
 
@@ -763,7 +823,7 @@ void manageAdminMenu() {
                 printf("New admin added successfully.\n");
                 break;
             }
-            case 2: {
+            case 2: { // Edit Admin
                 char editUsername[50], newPassword[50];
                 printf("Enter the username of the admin to edit: ");
                 scanf("%s", editUsername);
@@ -810,7 +870,7 @@ void manageAdminMenu() {
                 }
                 break;
             }
-            case 3: {
+            case 3: { // Delete Admin
                 char deleteUsername[50];
                 printf("Enter the username of the admin to delete: ");
                 scanf("%s", deleteUsername);
