@@ -398,13 +398,16 @@ void editStockBook() {
         printf("1. Edit Book Details\n");
         printf("2. Delete Book\n");
         printf("3. Add Stock\n");
-        printf("4. Show All Books\n"); // Moved Show All Books to option 4
-        printf("5. Exit to Admin Menu\n"); // Exit is now option 5
+        printf("4. Exit to Admin Menu\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
         switch (choice) {
             case 1: { // Edit Book Details
+                // Show the current stock before asking for the book ID
+                printf("\nCurrent Stock:\n");
+                showStock(bookList);
+
                 int id;
                 printf("Enter the ID of the book to edit: ");
                 scanf("%d", &id);
@@ -444,6 +447,10 @@ void editStockBook() {
                 break;
             }
             case 2: { // Delete Book
+                // Show the current stock before asking for the book ID
+                printf("\nCurrent Stock:\n");
+                showStock(bookList);
+
                 int id;
                 printf("Enter the ID of the book to delete: ");
                 scanf("%d", &id);
@@ -470,14 +477,20 @@ void editStockBook() {
                 break;
             }
             case 3: { // Add Stock
+                // Show the current stock before asking for the book ID
+                printf("\nCurrent Stock:\n");
+                showStock(bookList);
+            
                 int id, quantityToAdd;
                 printf("Enter the ID of the book to add stock: ");
                 scanf("%d", &id);
-
+            
                 Book *current = bookList;
+                Book *prev = NULL;
                 int found = 0;
-
-                while (current) {
+            
+                // Search for the book by ID
+                while (current && current->id <= id) {
                     if (current->id == id) {
                         printf("Current stock for '%s': %d\n", current->title, current->quantity);
                         printf("Enter quantity to add: ");
@@ -487,48 +500,52 @@ void editStockBook() {
                         found = 1;
                         break;
                     }
+                    prev = current;
                     current = current->next;
                 }
-
+            
                 if (!found) {
-                    // If the book ID is not found, add a new book
+                    // If the book ID is not found, add a new book in sorted order
                     printf("Book with ID %d not found. Adding a new book.\n", id);
-
+            
                     Book *newBook = (Book *)malloc(sizeof(Book));
                     newBook->id = id;
-
+            
                     printf("Enter title: ");
                     getchar(); // Clear newline
                     fgets(newBook->title, sizeof(newBook->title), stdin);
                     newBook->title[strcspn(newBook->title, "\n")] = '\0'; // Remove newline
-
+            
                     printf("Enter author: ");
                     fgets(newBook->author, sizeof(newBook->author), stdin);
                     newBook->author[strcspn(newBook->author, "\n")] = '\0'; // Remove newline
-
+            
                     printf("Enter category: ");
                     fgets(newBook->category, sizeof(newBook->category), stdin);
                     newBook->category[strcspn(newBook->category, "\n")] = '\0'; // Remove newline
-
+            
                     printf("Enter quantity: ");
                     scanf("%d", &newBook->quantity);
-
+            
                     printf("Enter price: ");
                     scanf("%f", &newBook->price);
-
-                    newBook->next = bookList;
-                    bookList = newBook;
-
+            
+                    // Insert the new book in the correct position to maintain sorted order
+                    if (!prev) {
+                        // Insert at the beginning
+                        newBook->next = bookList;
+                        bookList = newBook;
+                    } else {
+                        // Insert after prev
+                        newBook->next = prev->next;
+                        prev->next = newBook;
+                    }
+            
                     printf("New book added successfully.\n");
                 }
                 break;
             }
-            case 4: { // Show All Books
-                printf("\nCurrent Stock:\n");
-                showStock(bookList);
-                break;
-            }
-            case 5: // Exit to Admin Menu
+            case 4: // Exit to Admin Menu
                 printf("Returning to Admin Menu...\n");
                 freeBookList(bookList);
                 return;
@@ -553,9 +570,15 @@ void editStockBook() {
 
         fclose(file);
 
+        // Show the updated stock
+        printf("\nUpdated Stock:\n");
+        showStock(bookList);
+
         freeBookList(bookList);
 
-    } while (choice != 5);
+        printf("Changes saved successfully.\n");
+
+    } while (choice != 4);
 
     printf("Returning to Admin Menu...\n");
 }
