@@ -385,140 +385,191 @@ void freeLogQueue(LogQueue *queue) {
 
 void editStockBook() {
     int choice;
-    printf("\nEdit Stock Book Menu:\n");
-    printf("1. Edit Book Details\n");
-    printf("2. Delete Book\n");
-    printf("3. Add Stock\n");
-    printf("4. Exit to Admin Menu\n");
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
 
-    FILE *file = fopen("file/Book_Stock.csv", "r");
-    if (!file) {
-        printf("Error: Could not open Book_Stock.csv\n");
-        return;
-    }
-
-    // Load books into a linked list
-    Book *bookList = loadBooksFromFile("file/Book_Stock.csv");
-    fclose(file);
-
-    switch (choice) {
-        case 1: { // Edit Book Details
-            int id;
-            printf("Enter the ID of the book to edit: ");
-            scanf("%d", &id);
-
-            Book *current = bookList;
-            while (current) {
-                if (current->id == id) {
-                    printf("Editing book: %s\n", current->title);
-                    printf("Enter new title: ");
-                    getchar(); // Clear newline
-                    fgets(current->title, sizeof(current->title), stdin);
-                    current->title[strcspn(current->title, "\n")] = '\0'; // Remove newline
-
-                    printf("Enter new author: ");
-                    fgets(current->author, sizeof(current->author), stdin);
-                    current->author[strcspn(current->author, "\n")] = '\0'; // Remove newline
-
-                    printf("Enter new category: ");
-                    fgets(current->category, sizeof(current->category), stdin);
-                    current->category[strcspn(current->category, "\n")] = '\0'; // Remove newline
-
-                    printf("Enter new quantity: ");
-                    scanf("%d", &current->quantity);
-
-                    printf("Enter new price: ");
-                    scanf("%f", &current->price);
-
-                    printf("Book details updated successfully.\n");
-                    break;
-                }
-                current = current->next;
-            }
-
-            if (!current) {
-                printf("Book with ID %d not found.\n", id);
-            }
-            break;
+    do {
+        // Load books into a linked list
+        Book *bookList = loadBooksFromFile("file/Book_Stock.csv");
+        if (!bookList) {
+            printf("Error: Could not load books from Book_Stock.csv\n");
+            return;
         }
-        case 2: { // Delete Book
-            int id;
-            printf("Enter the ID of the book to delete: ");
-            scanf("%d", &id);
 
-            Book *current = bookList, *prev = NULL;
-            while (current) {
-                if (current->id == id) {
-                    if (prev) {
-                        prev->next = current->next;
-                    } else {
-                        bookList = current->next;
+        printf("\nEdit Stock Book Menu:\n");
+        printf("1. Edit Book Details\n");
+        printf("2. Delete Book\n");
+        printf("3. Add Stock\n");
+        printf("4. Exit to Admin Menu\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: { // Edit Book Details
+                // Show the current stock before asking for the book ID
+                printf("\nCurrent Stock:\n");
+                showStock(bookList);
+
+                int id;
+                printf("Enter the ID of the book to edit: ");
+                scanf("%d", &id);
+
+                Book *current = bookList;
+                while (current) {
+                    if (current->id == id) {
+                        printf("Editing book: %s\n", current->title);
+                        printf("Enter new title: ");
+                        getchar(); // Clear newline
+                        fgets(current->title, sizeof(current->title), stdin);
+                        current->title[strcspn(current->title, "\n")] = '\0'; // Remove newline
+
+                        printf("Enter new author: ");
+                        fgets(current->author, sizeof(current->author), stdin);
+                        current->author[strcspn(current->author, "\n")] = '\0'; // Remove newline
+
+                        printf("Enter new category: ");
+                        fgets(current->category, sizeof(current->category), stdin);
+                        current->category[strcspn(current->category, "\n")] = '\0'; // Remove newline
+
+                        printf("Enter new quantity: ");
+                        scanf("%d", &current->quantity);
+
+                        printf("Enter new price: ");
+                        scanf("%f", &current->price);
+
+                        printf("Book details updated successfully.\n");
+                        break;
                     }
-                    free(current);
-                    printf("Book with ID %d deleted successfully.\n", id);
-                    break;
+                    current = current->next;
                 }
-                prev = current;
-                current = current->next;
-            }
 
-            if (!current) {
-                printf("Book with ID %d not found.\n", id);
-            }
-            break;
-        }
-        case 3: { // Add Stock
-            int id, quantityToAdd;
-            printf("Enter the ID of the book to add stock: ");
-            scanf("%d", &id);
-
-            Book *current = bookList;
-            while (current) {
-                if (current->id == id) {
-                    printf("Current stock for '%s': %d\n", current->title, current->quantity);
-                    printf("Enter quantity to add: ");
-                    scanf("%d", &quantityToAdd);
-                    current->quantity += quantityToAdd;
-                    printf("Stock updated successfully. New stock: %d\n", current->quantity);
-                    break;
+                if (!current) {
+                    printf("Book with ID %d not found.\n", id);
                 }
-                current = current->next;
+                break;
             }
+            case 2: { // Delete Book
+                // Show the current stock before asking for the book ID
+                printf("\nCurrent Stock:\n");
+                showStock(bookList);
 
-            if (!current) {
-                printf("Book with ID %d not found.\n", id);
+                int id;
+                printf("Enter the ID of the book to delete: ");
+                scanf("%d", &id);
+
+                Book *current = bookList, *prev = NULL;
+                while (current) {
+                    if (current->id == id) {
+                        if (prev) {
+                            prev->next = current->next;
+                        } else {
+                            bookList = current->next;
+                        }
+                        free(current);
+                        printf("Book with ID %d deleted successfully.\n", id);
+                        break;
+                    }
+                    prev = current;
+                    current = current->next;
+                }
+
+                if (!current) {
+                    printf("Book with ID %d not found.\n", id);
+                }
+                break;
             }
-            break;
+            case 3: { // Add Stock
+                // Show the current stock before asking for the book ID
+                printf("\nCurrent Stock:\n");
+                showStock(bookList);
+
+                int id, quantityToAdd;
+                printf("Enter the ID of the book to add stock: ");
+                scanf("%d", &id);
+
+                Book *current = bookList;
+                int found = 0;
+
+                while (current) {
+                    if (current->id == id) {
+                        printf("Current stock for '%s': %d\n", current->title, current->quantity);
+                        printf("Enter quantity to add: ");
+                        scanf("%d", &quantityToAdd);
+                        current->quantity += quantityToAdd;
+                        printf("Stock updated successfully. New stock: %d\n", current->quantity);
+                        found = 1;
+                        break;
+                    }
+                    current = current->next;
+                }
+
+                if (!found) {
+                    // If the book ID is not found, add a new book
+                    printf("Book with ID %d not found. Adding a new book.\n", id);
+
+                    Book *newBook = (Book *)malloc(sizeof(Book));
+                    newBook->id = id;
+
+                    printf("Enter title: ");
+                    getchar(); // Clear newline
+                    fgets(newBook->title, sizeof(newBook->title), stdin);
+                    newBook->title[strcspn(newBook->title, "\n")] = '\0'; // Remove newline
+
+                    printf("Enter author: ");
+                    fgets(newBook->author, sizeof(newBook->author), stdin);
+                    newBook->author[strcspn(newBook->author, "\n")] = '\0'; // Remove newline
+
+                    printf("Enter category: ");
+                    fgets(newBook->category, sizeof(newBook->category), stdin);
+                    newBook->category[strcspn(newBook->category, "\n")] = '\0'; // Remove newline
+
+                    printf("Enter quantity: ");
+                    scanf("%d", &newBook->quantity);
+
+                    printf("Enter price: ");
+                    scanf("%f", &newBook->price);
+
+                    newBook->next = bookList;
+                    bookList = newBook;
+
+                    printf("New book added successfully.\n");
+                }
+                break;
+            }
+            case 4: // Exit to Admin Menu
+                printf("Returning to Admin Menu...\n");
+                freeBookList(bookList);
+                return;
+            default:
+                printf("Invalid choice. Please try again.\n");
+                break;
         }
-        case 4: // Exit to Admin Menu
-            printf("Returning to Admin Menu...\n");
+
+        // Save the updated book list back to the file
+        FILE *file = fopen("file/Book_Stock.csv", "w");
+        if (!file) {
+            printf("Error: Could not open Book_Stock.csv for writing.\n");
             freeBookList(bookList);
             return;
-        default:
-            printf("Invalid choice. Please try again.\n");
-            break;
-    }
+        }
 
-    // Save the updated book list back to the file
-    FILE *tempFile = fopen("file/Book_Stock.csv", "w");
-    if (!tempFile) {
-        printf("Error: Could not open Book_Stock.csv for writing.\n");
+        Book *current = bookList;
+        while (current) {
+            fprintf(file, "%d,%s,%s,%s,%d,%.2f\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
+            current = current->next;
+        }
+
+        fclose(file);
+
+        // Show the updated stock
+        printf("\nUpdated Stock:\n");
+        showStock(bookList);
+
         freeBookList(bookList);
-        return;
-    }
 
-    Book *current = bookList;
-    while (current) {
-        fprintf(tempFile, "%d,%s,%s,%s,%d,%.2f\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
-        current = current->next;
-    }
+        printf("Changes saved successfully.\n");
 
-    fclose(tempFile);
-    freeBookList(bookList);
+    } while (choice != 4);
 
-    printf("Changes saved successfully.\n");
+    printf("Returning to Admin Menu...\n");
 }
 
 void manageCoupons() {

@@ -46,24 +46,23 @@ TreeNode* insertTreeNode(TreeNode *root, char *key, int id, char *title, char *a
 }
 
 // Function to search for a node in the tree
-void searchTree(TreeNode *root, char *key) {
+void searchTree(TreeNode *root, char *key, int searchByCategory) {
     if (root == NULL) {
-        printf("No matching books found.\n");
         return;
     }
 
-    if (strcmp(key, root->key) == 0) {
+    // Traverse the left subtree
+    searchTree(root->left, key, searchByCategory);
+
+    // Check if the current node matches the search key
+    if ((searchByCategory && strcmp(root->category, key) == 0) || (!searchByCategory && strcmp(root->key, key) == 0)) {
         printf("Book Found:\n");
-        printf("ID: %d\nTitle: %s\nAuthor: %s\nCategory: %s\nQuantity: %d\nPrice: $%.2f\n",
+        printf("ID: %d\nTitle: %s\nAuthor: %s\nCategory: %s\nQuantity: %d\nPrice: $%.2f\n\n",
                root->id, root->title, root->author, root->category, root->quantity, root->price);
-        return;
     }
 
-    if (strcmp(key, root->key) < 0) {
-        searchTree(root->left, key);
-    } else {
-        searchTree(root->right, key);
-    }
+    // Traverse the right subtree
+    searchTree(root->right, key, searchByCategory);
 }
 
 // Function to load books from Book_Stock.csv into the tree
@@ -90,6 +89,16 @@ TreeNode* loadBooksIntoTree(const char *filename, int searchByCategory) {
 
     fclose(file);
     return root;
+}
+
+// Function to free the tree
+void freeTree(TreeNode *root) {
+    if (root == NULL) {
+        return;
+    }
+    freeTree(root->left);
+    freeTree(root->right);
+    free(root);
 }
 
 // Function to search books by category or title
@@ -129,8 +138,12 @@ void searchBooks() {
         exit(0); // Exit the current program
     }
 
-    // Search for the book
-    searchTree(root, key);
+    // Search for the book(s)
+    printf("\nSearch Results:\n");
+    searchTree(root, key, choice == 1);
+
+    // Free the tree after searching
+    freeTree(root);
 }
 
 int main() {
