@@ -1,4 +1,3 @@
-Username,Book Title,Quantity,Order Status
 john_doe,Book Title 1,2,Pending
 jane_smith,Book Title 2,1,Pending
-a,b,3,Processed
+a,b,3,Confirmed
