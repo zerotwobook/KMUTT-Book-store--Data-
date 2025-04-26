@@ -398,16 +398,13 @@ void editStockBook() {
         printf("1. Edit Book Details\n");
         printf("2. Delete Book\n");
         printf("3. Add Stock\n");
-        printf("4. Exit to Admin Menu\n");
+        printf("4. Show All Books\n"); // Moved Show All Books to option 4
+        printf("5. Exit to Admin Menu\n"); // Exit is now option 5
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
         switch (choice) {
             case 1: { // Edit Book Details
-                // Show the current stock before asking for the book ID
-                printf("\nCurrent Stock:\n");
-                showStock(bookList);
-
                 int id;
                 printf("Enter the ID of the book to edit: ");
                 scanf("%d", &id);
@@ -447,10 +444,6 @@ void editStockBook() {
                 break;
             }
             case 2: { // Delete Book
-                // Show the current stock before asking for the book ID
-                printf("\nCurrent Stock:\n");
-                showStock(bookList);
-
                 int id;
                 printf("Enter the ID of the book to delete: ");
                 scanf("%d", &id);
@@ -477,10 +470,6 @@ void editStockBook() {
                 break;
             }
             case 3: { // Add Stock
-                // Show the current stock before asking for the book ID
-                printf("\nCurrent Stock:\n");
-                showStock(bookList);
-
                 int id, quantityToAdd;
                 printf("Enter the ID of the book to add stock: ");
                 scanf("%d", &id);
@@ -534,7 +523,12 @@ void editStockBook() {
                 }
                 break;
             }
-            case 4: // Exit to Admin Menu
+            case 4: { // Show All Books
+                printf("\nCurrent Stock:\n");
+                showStock(bookList);
+                break;
+            }
+            case 5: // Exit to Admin Menu
                 printf("Returning to Admin Menu...\n");
                 freeBookList(bookList);
                 return;
@@ -559,15 +553,9 @@ void editStockBook() {
 
         fclose(file);
 
-        // Show the updated stock
-        printf("\nUpdated Stock:\n");
-        showStock(bookList);
-
         freeBookList(bookList);
 
-        printf("Changes saved successfully.\n");
-
-    } while (choice != 4);
+    } while (choice != 5);
 
     printf("Returning to Admin Menu...\n");
 }
