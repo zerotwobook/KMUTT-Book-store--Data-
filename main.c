@@ -2,6 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+void cls() {
+    #ifdef _WIN32
+        system("cls"); // For Windows
+    #else
+        system("clear"); // For Linux/Mac
+    #endif
+}
+
+void pauseForUser() {
+    printf("\n[Press Enter to continue]");
+    getchar(); // Clear any remaining newline
+    getchar(); // Wait for actual Enter key
+    cls();
+}
+
 // Define the structure for a doubly linked list node
 typedef struct Book {
     int id; // Book ID
@@ -82,6 +97,7 @@ Book* loadBooksFromFile(const char *filename) {
 
 // Function to display the books in the doubly linked list
 void displayBooks(Book *head) {
+    cls();
     if (!head) {
         printf("No books available.\n");
         return;
@@ -128,9 +144,11 @@ void addToCart(CartItem **cart, char *title, int quantity, Book *bookList) {
                 *cart = newItem;
 
                 printf("Added %d of '%s' to the cart.\n", quantity, title);
+                pauseForUser();
                 found = 1;
             } else {
                 printf("Not enough stock for '%s'. Only %d available.\n", title, currentBook->quantity);
+                pauseForUser();
             }
             break;
         }
@@ -139,13 +157,16 @@ void addToCart(CartItem **cart, char *title, int quantity, Book *bookList) {
 
     if (!found) {
         printf("Book '%s' not found in stock.\n", title);
+        pauseForUser();
     }
 }
 
 // Function to view the cart
 void viewCart(CartItem *cart, Book *bookList) {
+    cls();
     if (!cart) {
-        printf("Your cart is empty.\n");
+        printf("Your cart is empty...\n");
+        pauseForUser();
         return;
     }
 
@@ -178,6 +199,7 @@ void viewCart(CartItem *cart, Book *bookList) {
 
     printf("-----------------------------------------------------------------------------------------\n");
     printf("Total: $%.2f\n", total);
+    pauseForUser();
 }
 
 // Function to apply a coupon
@@ -205,8 +227,11 @@ float applyCoupon(const char *filename, char *couponCode, float total) {
 
 // Function to check out
 void checkout(CartItem *cart, Book *bookList) {
+    cls();
     if (!cart) {
         printf("Your cart is empty. Nothing to check out.\n");
+        pauseForUser();
+        cls();
         return;
     }
 
@@ -217,7 +242,8 @@ void checkout(CartItem *cart, Book *bookList) {
     float total = 0;
     CartItem *currentCart = cart;
 
-    printf("Checkout Summary:\n");
+    cls();
+    printf("Checkout Summary for %s:\n", username);
     printf("-----------------------------------------------------------------------------------------\n");
     printf("| %-30s | %-5s | %-10s |\n", "Title", "Qty", "Price");
     printf("-----------------------------------------------------------------------------------------\n");
@@ -352,8 +378,24 @@ void checkout(CartItem *cart, Book *bookList) {
         total = applyCoupon("file/Coupon.csv", couponCode, total);
     }
 
-    printf("Final total after discounts: $%.2f\n", total);
-    printf("Thank you for your purchase! Your order has been logged.\n");
+    cls();
+    
+    printf("\n");
+    printf("=========================================\n");
+    printf("          PURCHASE COMPLETE\n");
+    printf("=========================================\n\n");
+    
+    printf("        Thank you for your order!\n\n");
+    
+    printf("        Final amount: $%.2f\n\n", total);
+    
+    printf("        Your receipt has been saved.\n");
+    
+    printf("=============================================\n");
+    printf("    Need help? Punge@bookstore.kmutt.ac.th\n");
+    printf("=============================================\n");
+    
+    pauseForUser();
 }
 
 // Function to free the memory allocated for the cart
@@ -392,8 +434,9 @@ void enqueue(OrderQueue *queue, char *username, char *bookTitle, int quantity) {
 
 // Dequeue an order and save it to Orderlist.csv
 void processOrder(OrderQueue *queue) {
+    cls();
     char username[50];
-    printf("Enter the username to process orders for: ");
+    printf("Enter the ID to process orders for: ");
     scanf("%s", username);
 
     // Display all orders for the entered username
@@ -495,10 +538,16 @@ void processOrder(OrderQueue *queue) {
     if (queue->front == NULL) {
         queue->rear = NULL;
     }
+    cls();
+    printf("All orders for %s have been processed successfully!\n", username);
+    pauseForUser();
 }
 
 // Function to order a book
 void orderBook(OrderQueue *queue, char *username) {
+    cls();
+    printf("            [New Book Order]\n");
+    printf("------------------------------------------\n");
     char bookTitle[100];
     int quantity;
 
@@ -522,10 +571,18 @@ void orderBook(OrderQueue *queue, char *username) {
     fprintf(file, "%s,%s,%d,Pending\n", username, bookTitle, quantity); // Add "Pending" as the initial order status
     fclose(file);
 
-    printf("Order added to the queue and saved to Orderlist.csv: %s ordered %d of '%s'\n", username, quantity, bookTitle);
+    cls();
+    printf("Order successfully placed!\n");
+    printf("-------------------------\n");
+    printf("ID: %s\n", username);
+    printf("Book Title: %s\n", bookTitle);
+    printf("Quantity: %d\n", quantity);
+    printf("\nStatus: Pending (will be processed by staff)\n");
+    pauseForUser();
 }
 
 void displayBooksWithCartOptions(Book *head, CartItem **cart, Book *bookList) {
+    cls();
     if (!head) {
         printf("No books available.\n");
         return;
@@ -585,12 +642,18 @@ void displayBooksWithCartOptions(Book *head, CartItem **cart, Book *bookList) {
 int main() {
     Book *bookList = loadBooksFromFile("file/Book_Stock.csv");
     CartItem *cart = NULL;
-    OrderQueue *orderQueue = createQueue(); // Initialize the order queue
+    OrderQueue *orderQueue = createQueue();
 
     int choice;
     do {
+        cls();
         printf("\nWelcome to KMUTT Book Store!\n");
-        printf("\n1. View Books\n2. Search Books\n3. Order Book\n4. Process Order\n5. Exit\n");
+        printf("============================\n\n");
+        printf("1. View Books\n");
+        printf("2. Search Books\n");
+        printf("3. Order Book\n");
+        printf("4. Process Order\n");
+        printf("5. Exit\n\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
@@ -599,14 +662,17 @@ int main() {
                 displayBooksWithCartOptions(bookList, &cart, bookList);
                 break;
             case 2:
-                // Call the search program
-                system("search.exe"); // Assuming search.c is compiled into search.exe
-                exit(0); // Exit the current program
+                cls();
+                system("search.exe");
+                exit(0);
                 break;
             case 3: {
+                cls();
                 char username[50];
-                printf("Enter your username: ");
-                scanf("%s", username);
+                    printf("Example:'AB12'\n");
+                    printf("Create/Enter your ID: ");
+                    scanf("%s", username);
+                
                 orderBook(orderQueue, username);
                 break;
             }
@@ -616,15 +682,16 @@ int main() {
             case 5:
                 freeBookList(bookList);
                 freeCart(cart);
-                system("login.exe"); // Call the login program
-                return 0; // Exit the current main function after returning to login
+                cls();
+                system("login.exe");
+                return 0;
             default:
-                printf("Invalid choice. Try again.\n");
+                printf("Invalid choice. Please try again.\n");
+                pauseForUser();
         }
     } while (choice != 5);
 
     freeBookList(bookList);
     freeCart(cart);
-
     return 0;
 }
