@@ -50,6 +50,20 @@ typedef struct OrderQueue {
     Order *rear;
 } OrderQueue;
 
+// Define the structure for a borrow queue node
+typedef struct Borrow {
+    char username[50];
+    char bookTitle[100];
+    int quantity;
+    struct Borrow *next;
+} Borrow;
+
+// Define the borrow queue
+typedef struct BorrowQueue {
+    Borrow *front;
+    Borrow *rear;
+} BorrowQueue;
+
 // Function to create a new book node
 Book* createBookNode(char *title, char *author, int quantity) {
     Book *newBook = (Book *)malloc(sizeof(Book));
@@ -546,12 +560,12 @@ void processOrder(OrderQueue *queue) {
 // Function to order a book
 void orderBook(OrderQueue *queue, char *username) {
     cls();
-    printf("            [New Book Order]\n");
+    printf("            [New Book Pre-Order]\n");
     printf("------------------------------------------\n");
     char bookTitle[100];
     int quantity;
 
-    printf("Enter the title of the book to order: ");
+    printf("Enter the title of the book to pre order: ");
     getchar(); // Clear newline from buffer
     fgets(bookTitle, sizeof(bookTitle), stdin);
     bookTitle[strcspn(bookTitle, "\n")] = '\0'; // Remove newline
@@ -572,13 +586,53 @@ void orderBook(OrderQueue *queue, char *username) {
     fclose(file);
 
     cls();
-    printf("Order successfully placed!\n");
+    printf("Pre-Order book successfully placed!\n");
     printf("-------------------------\n");
     printf("ID: %s\n", username);
     printf("Book Title: %s\n", bookTitle);
     printf("Quantity: %d\n", quantity);
     printf("\nStatus: Pending (will be processed by staff)\n");
     pauseForUser();
+}
+
+// Function to create a new borrow queue
+BorrowQueue* createBorrowQueue() {
+    BorrowQueue *queue = (BorrowQueue *)malloc(sizeof(BorrowQueue));
+    queue->front = queue->rear = NULL;
+    return queue;
+}
+
+// Function to enqueue a borrow request
+void enqueueBorrow(BorrowQueue *queue, char *username, char *bookTitle, int quantity) {
+    Borrow *newBorrow = (Borrow *)malloc(sizeof(Borrow));
+    strcpy(newBorrow->username, username);
+    strcpy(newBorrow->bookTitle, bookTitle);
+    newBorrow->quantity = quantity;
+    newBorrow->next = NULL;
+
+    if (queue->rear == NULL) {
+        queue->front = queue->rear = newBorrow;
+        return;
+    }
+
+    queue->rear->next = newBorrow;
+    queue->rear = newBorrow;
+}
+
+// Function to dequeue a borrow request
+Borrow* dequeueBorrow(BorrowQueue *queue) {
+    if (queue->front == NULL) {
+        return NULL;
+    }
+
+    Borrow *temp = queue->front;
+    queue->front = queue->front->next;
+
+    if (queue->front == NULL) {
+        queue->rear = NULL;
+    }
+
+    return temp;
 }
 
 void displayBooksWithCartOptions(Book *head, CartItem **cart, Book *bookList) {
@@ -639,10 +693,256 @@ void displayBooksWithCartOptions(Book *head, CartItem **cart, Book *bookList) {
     } while (choice != 4);
 }
 
+void borrowBook(BorrowQueue *borrowQueue, Book *bookList) {
+    cls();
+    if (!bookList) {
+        printf("No books available to borrow.\n");
+        pauseForUser();
+        return;
+    }
+
+    char username[50];
+    printf("Enter your username: ");
+    scanf("%s", username);
+
+    printf("\nAvailable Books:\n");
+    displayBooks(bookList); // Show all available books
+
+    char title[100];
+    int quantity;
+
+    printf("\nEnter the title of the book to borrow: ");
+    getchar(); // Clear newline from buffer
+    fgets(title, sizeof(title), stdin);
+    title[strcspn(title, "\n")] = '\0'; // Remove newline
+
+    printf("Enter the quantity to borrow: ");
+    scanf("%d", &quantity);
+
+    // Search for the book in the stock
+    Book *current = bookList;
+    int found = 0;
+
+    while (current) {
+        if (strcasecmp(current->title, title) == 0) { // Case-insensitive comparison
+            if (current->quantity >= quantity) {
+                // Deduct the quantity from the stock
+                current->quantity -= quantity;
+
+                // Enqueue the borrow request
+                enqueueBorrow(borrowQueue, username, title, quantity);
+
+                // Save the borrowing details to List_borrow_book.csv
+                FILE *file = fopen("file/List_borrow_book.csv", "a");
+                if (!file) {
+                    printf("Error opening file/List_borrow_book.csv\n");
+                    return;
+                }
+                fprintf(file, "%s,%s,%d\n", username, title, quantity);
+                fclose(file);
+
+                printf("You have successfully borrowed %d of '%s'.\n", quantity, title);
+
+                // Update the stock in Book_Stock.csv
+                FILE *stockFile = fopen("file/Book_Stock.csv", "r");
+                FILE *tempStockFile = fopen("file/Book_Stock_temp.csv", "w");
+                if (!stockFile || !tempStockFile) {
+                    printf("Error updating Book_Stock.csv.\n");
+                    return;
+                }
+
+                char line[256];
+                while (fgets(line, sizeof(line), stockFile)) {
+                    int id, stockQuantity;
+                    char stockTitle[100], author[100], category[50];
+                    float price;
+                    sscanf(line, "%d,%[^,],%[^,],%[^,],%d,%f", &id, stockTitle, author, category, &stockQuantity, &price);
+
+                    if (strcasecmp(stockTitle, title) == 0) {
+                        stockQuantity = current->quantity; // Update the quantity
+                    }
+
+                    fprintf(tempStockFile, "%d,%s,%s,%s,%d,%.2f\n", id, stockTitle, author, category, stockQuantity, price);
+                }
+
+                fclose(stockFile);
+                fclose(tempStockFile);
+
+                // Replace the original stock file with the updated file
+                remove("file/Book_Stock.csv");
+                rename("file/Book_Stock_temp.csv", "file/Book_Stock.csv");
+
+                found = 1;
+                break;
+            } else {
+                printf("Not enough stock for '%s'. Only %d available.\n", title, current->quantity);
+                found = 1;
+                break;
+            }
+        }
+        current = current->next;
+    }
+
+    if (!found) {
+        printf("Book '%s' not found in stock.\n", title);
+    }
+
+    pauseForUser();
+}
+
+void returnBook(BorrowQueue *borrowQueue, Book *bookList) {
+    cls();
+    if (!borrowQueue->front) {
+        printf("No borrowed books to return.\n");
+        pauseForUser();
+        return;
+    }
+
+    char username[50];
+    printf("Enter your username: ");
+    scanf("%s", username);
+
+    // Display all books borrowed by the user
+    Borrow *current = borrowQueue->front;
+    int found = 0;
+
+    printf("\nBooks borrowed by %s:\n", username);
+    printf("-------------------------------------------------------------\n");
+    printf("| %-30s | %-10s |\n", "Book Title", "Quantity");
+    printf("-------------------------------------------------------------\n");
+
+    while (current) {
+        if (strcmp(current->username, username) == 0) {
+            printf("| %-30s | %-10d |\n", current->bookTitle, current->quantity);
+            found = 1;
+        }
+        current = current->next;
+    }
+
+    if (!found) {
+        printf("No books borrowed by %s.\n", username);
+        pauseForUser();
+        return;
+    }
+
+    printf("-------------------------------------------------------------\n");
+
+    // Ask the user to select a book to return
+    char title[100];
+    printf("\nEnter the title of the book to return: ");
+    getchar(); // Clear newline from buffer
+    fgets(title, sizeof(title), stdin);
+    title[strcspn(title, "\n")] = '\0'; // Remove newline
+
+    current = borrowQueue->front;
+    Borrow *prev = NULL;
+
+    while (current) {
+        if (strcmp(current->username, username) == 0 && strcmp(current->bookTitle, title) == 0) {
+            // Update the stock in Book_Stock.csv
+            Book *book = bookList;
+            while (book) {
+                if (strcmp(book->title, title) == 0) {
+                    book->quantity += current->quantity; // Add the returned quantity back to stock
+                    break;
+                }
+                book = book->next;
+            }
+
+            // Save the updated stock to Book_Stock.csv
+            FILE *stockFile = fopen("file/Book_Stock.csv", "r");
+            FILE *tempStockFile = fopen("file/Book_Stock_temp.csv", "w");
+            if (!stockFile || !tempStockFile) {
+                printf("Error updating Book_Stock.csv.\n");
+                return;
+            }
+
+            char line[256];
+            while (fgets(line, sizeof(line), stockFile)) {
+                int id, stockQuantity;
+                char stockTitle[100], author[100], category[50];
+                float price;
+                sscanf(line, "%d,%[^,],%[^,],%[^,],%d,%f", &id, stockTitle, author, category, &stockQuantity, &price);
+
+                if (strcmp(stockTitle, title) == 0) {
+                    stockQuantity = book->quantity; // Update the quantity
+                }
+
+                fprintf(tempStockFile, "%d,%s,%s,%s,%d,%.2f\n", id, stockTitle, author, category, stockQuantity, price);
+            }
+
+            fclose(stockFile);
+            fclose(tempStockFile);
+
+            // Replace the original stock file with the updated file
+            remove("file/Book_Stock.csv");
+            rename("file/Book_Stock_temp.csv", "file/Book_Stock.csv");
+
+            // Log the returned book in list_return.csv
+            FILE *returnFile = fopen("file/list_return.csv", "a");
+            if (!returnFile) {
+                printf("Error opening file/list_return.csv.\n");
+                return;
+            }
+            fprintf(returnFile, "%s,%s,%d\n", username, title, current->quantity);
+            fclose(returnFile);
+
+            // Remove the borrow request from the queue
+            if (prev == NULL) {
+                borrowQueue->front = current->next;
+            } else {
+                prev->next = current->next;
+            }
+
+            if (current == borrowQueue->rear) {
+                borrowQueue->rear = prev;
+            }
+
+            // Remove the borrow entry from List_borrow_book.csv
+            FILE *borrowFile = fopen("file/List_borrow_book.csv", "r");
+            FILE *tempBorrowFile = fopen("file/List_borrow_book_temp.csv", "w");
+            if (!borrowFile || !tempBorrowFile) {
+                printf("Error updating List_borrow_book.csv.\n");
+                return;
+            }
+
+            while (fgets(line, sizeof(line), borrowFile)) {
+                char fileUsername[50], fileTitle[100];
+                int fileQuantity;
+                sscanf(line, "%[^,],%[^,],%d", fileUsername, fileTitle, &fileQuantity);
+
+                if (!(strcmp(fileUsername, username) == 0 && strcmp(fileTitle, title) == 0 && fileQuantity == current->quantity)) {
+                    fprintf(tempBorrowFile, "%s", line); // Write all other entries
+                }
+            }
+
+            fclose(borrowFile);
+            fclose(tempBorrowFile);
+
+            // Replace the original borrow file with the updated file
+            remove("file/List_borrow_book.csv");
+            rename("file/List_borrow_book_temp.csv", "file/List_borrow_book.csv");
+
+            free(current);
+
+            printf("Book '%s' returned successfully.\n", title);
+            pauseForUser();
+            return;
+        }
+
+        prev = current;
+        current = current->next;
+    }
+
+    printf("Book '%s' not found in your borrowed list.\n", title);
+    pauseForUser();
+}
+
 int main() {
     Book *bookList = loadBooksFromFile("file/Book_Stock.csv");
     CartItem *cart = NULL;
     OrderQueue *orderQueue = createQueue();
+    BorrowQueue *borrowQueue = createBorrowQueue(); // Create a borrow queue
 
     int choice;
     do {
@@ -651,9 +951,11 @@ int main() {
         printf("============================\n\n");
         printf("1. View Books\n");
         printf("2. Search Books\n");
-        printf("3. Order Book\n");
-        printf("4. Process Order\n");
-        printf("5. Exit\n\n");
+        printf("3. Pre-Order Book\n");
+        printf("4. Borrow Book\n");
+        printf("5. Return Book\n"); // New option for returning books
+        printf("6. Process Order\n");
+        printf("7. Exit\n\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
@@ -669,17 +971,23 @@ int main() {
             case 3: {
                 cls();
                 char username[50];
-                    printf("Example:'AB12'\n");
-                    printf("Create/Enter your ID: ");
-                    scanf("%s", username);
-                
+                printf("Example: 'AB12'\n");
+                printf("Create/Enter your ID: ");
+                scanf("%s", username);
+
                 orderBook(orderQueue, username);
                 break;
             }
-            case 4:
+            case 4: // Borrow Book
+                borrowBook(borrowQueue, bookList);
+                break;
+            case 5: // Return Book
+                returnBook(borrowQueue, bookList);
+                break;
+            case 6:
                 processOrder(orderQueue);
                 break;
-            case 5:
+            case 7:
                 freeBookList(bookList);
                 freeCart(cart);
                 cls();
@@ -689,7 +997,7 @@ int main() {
                 printf("Invalid choice. Please try again.\n");
                 pauseForUser();
         }
-    } while (choice != 5);
+    } while (choice != 7);
 
     freeBookList(bookList);
     freeCart(cart);

@@ -1104,6 +1104,216 @@ void generateReport() {
     freeLogQueue(logQueue);
 }
 
+void showListBorrowBook() {
+    FILE *file = fopen("file/List_borrow_book.csv", "r");
+    if (!file) {
+        printf("Error: Could not open List_borrow_book.csv\n");
+        return;
+    }
+
+    printf("\nList of Borrowed Books:\n");
+    printf("-------------------------------------------------------------\n");
+    printf("| %-20s | %-30s | %-10s |\n", "Username", "Book Title", "Quantity");
+    printf("-------------------------------------------------------------\n");
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        char username[50], bookTitle[100];
+        int quantity;
+
+        // Parse the line to extract borrow details
+        sscanf(line, "%[^,],%[^,],%d", username, bookTitle, &quantity);
+
+        // Display the borrow details
+        printf("| %-20s | %-30s | %-10d |\n", username, bookTitle, quantity);
+    }
+
+    printf("-------------------------------------------------------------\n");
+
+    fclose(file);
+}
+
+void showListReturnBook() {
+    FILE *file = fopen("file/list_return.csv", "r");
+    if (!file) {
+        printf("Error: Could not open list_return.csv\n");
+        return;
+    }
+
+    printf("\nList of Returned Books:\n");
+    printf("-------------------------------------------------------------\n");
+    printf("| %-20s | %-30s | %-10s |\n", "Username", "Book Title", "Quantity");
+    printf("-------------------------------------------------------------\n");
+
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        char username[50], bookTitle[100];
+        int quantity;
+
+        // Parse the line to extract return details
+        sscanf(line, "%[^,],%[^,],%d", username, bookTitle, &quantity);
+
+        // Display the return details
+        printf("| %-20s | %-30s | %-10d |\n", username, bookTitle, quantity);
+    }
+
+    printf("-------------------------------------------------------------\n");
+
+    fclose(file);
+}
+
+void manageBorrowedBooks() {
+    int choice;
+
+    do {
+        printf("\n----------------------------------------------");
+        printf("\n|          Manage Borrowed Books Menu        |");
+        printf("\n----------------------------------------------\n");
+        printf("|  1. View Borrowed Books                    |\n");
+        printf("|  2. Edit Borrowed Book Record              |\n");
+        printf("|  3. Delete Borrowed Book Record            |\n");
+        printf("|  4. Exit to Admin Menu                     |\n");
+        printf("----------------------------------------------\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        system("cls");
+
+        switch (choice) {
+            case 1: { // View Borrowed Books
+                showListBorrowBook();
+                break;
+            }
+            case 2: { // Edit Borrowed Book Record
+                // Show the list of borrowed books before editing
+                printf("\nCurrent List of Borrowed Books:\n");
+                showListBorrowBook();
+
+                char username[50], bookTitle[100];
+                int newQuantity;
+
+                printf("Enter the username of the borrower: ");
+                scanf("%s", username);
+                printf("Enter the title of the borrowed book: ");
+                getchar(); // Clear newline
+                fgets(bookTitle, sizeof(bookTitle), stdin);
+                bookTitle[strcspn(bookTitle, "\n")] = '\0'; // Remove newline
+
+                printf("Enter the new quantity: ");
+                scanf("%d", &newQuantity);
+
+                FILE *file = fopen("file/List_borrow_book.csv", "r");
+                if (!file) {
+                    printf("Error: Could not open List_borrow_book.csv\n");
+                    return;
+                }
+
+                FILE *tempFile = fopen("file/List_borrow_book_temp.csv", "w");
+                if (!tempFile) {
+                    printf("Error: Could not create temporary file.\n");
+                    fclose(file);
+                    return;
+                }
+
+                char line[256];
+                int found = 0;
+                while (fgets(line, sizeof(line), file)) {
+                    char fileUsername[50], fileBookTitle[100];
+                    int fileQuantity;
+
+                    sscanf(line, "%[^,],%[^,],%d", fileUsername, fileBookTitle, &fileQuantity);
+
+                    if (strcmp(fileUsername, username) == 0 && strcmp(fileBookTitle, bookTitle) == 0) {
+                        fprintf(tempFile, "%s,%s,%d\n", username, bookTitle, newQuantity);
+                        found = 1;
+                    } else {
+                        fprintf(tempFile, "%s", line);
+                    }
+                }
+
+                fclose(file);
+                fclose(tempFile);
+
+                if (found) {
+                    remove("file/List_borrow_book.csv");
+                    rename("file/List_borrow_book_temp.csv", "file/List_borrow_book.csv");
+                    printf("Borrowed book record updated successfully.\n");
+                } else {
+                    remove("file/List_borrow_book_temp.csv");
+                    printf("Borrowed book record not found.\n");
+                }
+
+                // Show the updated list of borrowed books
+                showListBorrowBook();
+                break;
+            }
+            case 3: { // Delete Borrowed Book Record
+                // Show the list of borrowed books before deleting
+                printf("\nCurrent List of Borrowed Books:\n");
+                showListBorrowBook();
+
+                char username[50], bookTitle[100];
+
+                printf("Enter the username of the borrower: ");
+                scanf("%s", username);
+                printf("Enter the title of the borrowed book: ");
+                getchar(); // Clear newline
+                fgets(bookTitle, sizeof(bookTitle), stdin);
+                bookTitle[strcspn(bookTitle, "\n")] = '\0'; // Remove newline
+
+                FILE *file = fopen("file/List_borrow_book.csv", "r");
+                if (!file) {
+                    printf("Error: Could not open List_borrow_book.csv\n");
+                    return;
+                }
+
+                FILE *tempFile = fopen("file/List_borrow_book_temp.csv", "w");
+                if (!tempFile) {
+                    printf("Error: Could not create temporary file.\n");
+                    fclose(file);
+                    return;
+                }
+
+                char line[256];
+                int found = 0;
+                while (fgets(line, sizeof(line), file)) {
+                    char fileUsername[50], fileBookTitle[100];
+                    int fileQuantity;
+
+                    sscanf(line, "%[^,],%[^,],%d", fileUsername, fileBookTitle, &fileQuantity);
+
+                    if (strcmp(fileUsername, username) == 0 && strcmp(fileBookTitle, bookTitle) == 0) {
+                        found = 1;
+                    } else {
+                        fprintf(tempFile, "%s", line);
+                    }
+                }
+
+                fclose(file);
+                fclose(tempFile);
+
+                if (found) {
+                    remove("file/List_borrow_book.csv");
+                    rename("file/List_borrow_book_temp.csv", "file/List_borrow_book.csv");
+                    printf("Borrowed book record deleted successfully.\n");
+                } else {
+                    remove("file/List_borrow_book_temp.csv");
+                    printf("Borrowed book record not found.\n");
+                }
+
+                // Show the updated list of borrowed books
+                showListBorrowBook();
+                break;
+            }
+            case 4: // Exit to Admin Menu
+                printf("Returning to Admin Menu...\n");
+                return;
+            default:
+                printf("Invalid choice. Please try again.\n");
+                break;
+        }
+    } while (choice != 4);
+}
+
 int main() {
     int choice;
 
@@ -1122,12 +1332,15 @@ int main() {
         printf("\n|  2. Show Orders                            |");
         printf("\n|  3. Show History Orders                    |");
         printf("\n|  4. Show Log Stock Book                    |");
-        printf("\n|  5. Search Book                            |");
-        printf("\n|  6. Edit Stock Book                        |");
-        printf("\n|  7. Manage Coupons                         |");
-        printf("\n|  8. Manage Admins                          |");
-        printf("\n|  9. Generate Report                        |");
-        printf("\n|  10. Exit                                  |");
+        printf("\n|  5. Show List Borrowed Books               |"); 
+        printf("\n|  6. Show List Returned Books               |"); 
+        printf("\n|  7. Search Book                            |");
+        printf("\n|  8. Edit Stock Book                        |");
+        printf("\n|  9. Manage Coupons                         |");
+        printf("\n| 10. Manage Admins                          |");
+        printf("\n| 11. Generate Report                        |");
+        printf("\n| 12. Manage Borrowed Books                  |");
+        printf("\n| 13. Exit                                   |");
         printf("\n----------------------------------------------");
         printf("\nEnter your choice: ");
         scanf("%d", &choice);
@@ -1146,23 +1359,32 @@ int main() {
             case 4:
                 showLogStockBook();
                 break;
-            case 5:
+            case 5: // Show List of Borrowed Books
+                showListBorrowBook();
+                break;
+            case 6: // Show List of Returned Books
+                showListReturnBook();
+                break;
+            case 7:
                 system("searchadmin.exe");
                 exit(0);
                 break;
-            case 6:
+            case 8:
                 editStockBook();
                 break;
-            case 7:
+            case 9:
                 manageCoupons();
                 break;
-            case 8:
+            case 10:
                 manageAdmin(); // Call the manageAdmin function
                 break;
-            case 9:
+            case 11:
                 generateReport();
                 break;
-            case 10:
+            case 12:
+                manageBorrowedBooks();
+                break;
+            case 13:
                 printf("Exiting...\n");
                 system("login.exe"); // Call the login program
                 exit(0); // Exit the current program
@@ -1170,7 +1392,7 @@ int main() {
             default:
                 printf("Invalid choice. Please try again.\n");
         }
-    } while (choice != 10);
+    } while (choice != 13);
 
     // Free the linked list and the queue
     freeBookList(bookList);

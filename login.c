@@ -197,7 +197,7 @@ int main() {
     int choice;
     do {
         printf("\n----------------------------------------------");
-        printf("\n|        WELCOME TO THE BOOK STORE           |");
+        printf("\n|      WELCOME TO THE KMUTT BOOK STORE       |");
         printf("\n----------------------------------------------");
         printf("\n|  1. Login                                  |");
         printf("\n|  2. Create Account                         |");
