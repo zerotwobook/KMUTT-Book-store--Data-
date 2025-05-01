@@ -178,12 +178,25 @@ void priceRangeSearch(TreeNode *root) {
         getchar(); getchar();
         return;
     }
+
+    if (minPrice<0) {
+        printf("Minimum price cannot be negative number.\n");
+        printf("Press Enter to continue...");
+        getchar(); getchar();
+        return;
+    }
     getchar(); // Consume newline
     
     printf("Enter maximum price: ");
     float maxPrice;
     if (scanf("%f", &maxPrice) != 1) {
         printf("Invalid input for maximum price.\n");
+        printf("Press Enter to continue...");
+        getchar(); getchar();
+        return;
+    }
+    if (maxPrice<0) {
+        printf("Maximum price cannot be negative number.\n");
         printf("Press Enter to continue...");
         getchar(); getchar();
         return;
