@@ -854,11 +854,14 @@ void displayBooksWithCartOptions(Book *head, CartItem **cart, Book *bookList) {
         }
         printf("-------------------------------------------------------------------------------------------------------------\n");
 
-        printf("\nOptions:\n");
-        printf("1. Add to Cart\n");
-        printf("2. View Cart\n");
-        printf("3. Checkout\n");
-        printf("4. Exit to Main Menu\n");
+        printf("----------------------------------------------");
+        printf("\n| Options:                                   |\n");
+        printf("----------------------------------------------\n");
+        printf("| 1. Add to Cart                             |\n");
+        printf("| 2. View Cart                               |\n");
+        printf("| 3. Checkout                                |\n");
+        printf("| 4. Exit to Main Menu                       |\n");
+        printf("----------------------------------------------\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
@@ -1151,15 +1154,17 @@ int main() {
     int choice;
     do {
         cls();
-        printf("\nWelcome to KMUTT Book Store!\n");
-        printf("============================\n\n");
-        printf("1. View Books\n");
-        printf("2. Search Books\n");
-        printf("3. Pre-Order Book (Coming Soon)\n");
-        printf("4. Borrow Book\n");
-        printf("5. Return Book\n");
-        printf("6. Process Order\n");
-        printf("7. Exit\n\n");
+        printf("\n----------------------------------------------");
+        printf("\n|      WELCOME TO THE KMUTT BOOK STORE       |");
+        printf("\n----------------------------------------------\n");
+        printf("| 1. View Books                              |\n");
+        printf("| 2. Search Books                            |\n");
+        printf("| 3. Pre-Order Book (Coming Soon)            |\n");
+        printf("| 4. Borrow Book                             |\n");
+        printf("| 5. Return Book                             |\n");
+        printf("| 6. Process Order                           |\n");
+        printf("| 7. Exit                                    |\n");
+        printf("----------------------------------------------\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
