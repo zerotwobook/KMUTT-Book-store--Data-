@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 // Define the structure for a book
 typedef struct Book {
@@ -53,6 +54,14 @@ typedef struct LogQueue {
     Log *front;
     Log *rear;
 } LogQueue;
+
+void pauseForUser()
+{
+    printf("\n[Press Enter to continue]");
+    getchar();
+    getchar();
+    system("cls");
+}
 
 // Function prototypes
 void manageAdminMenu(); // Add this prototype to fix the warning
@@ -204,82 +213,127 @@ void showStock(Book *head) {
 void showOrders(OrderQueue *queue) {
     if (!queue->front) {
         printf("No orders available.\n");
-        return;
-    }
-
-    printf("Orders:\n");
-    printf("-------------------------------------------------------------------------------------------------------------\n");
-    printf("| %-20s      | %-30s | %-10s | %-10s |\n", "Username", "Book Title", "Quantity", "Status");
-    printf("-------------------------------------------------------------------------------------------------------------\n");
-
-    Order *current = queue->front;
-    int orderIndex = 1;
-
-    // Display orders with an index
-    while (current) {
-        printf("| %-2d | %-20s | %-30s | %-10d | %-10s |\n", orderIndex, current->username, current->bookTitle, current->quantity, current->status);
-        current = current->next;
-        orderIndex++;
-    }
-
-    printf("-------------------------------------------------------------------------------------------------------------\n");
-
-    // Ask admin to confirm and update status
-    int confirmIndex;
-    printf("Enter the order number to confirm and update status (or 0 to cancel): ");
-    scanf("%d", &confirmIndex);
-
-    if (confirmIndex == 0) {
+        pauseForUser();
         system("cls");
-        printf("No order was submitted.\n");
         return;
     }
 
-    // Find the selected order
-    current = queue->front;
-    Order *prev = NULL;
-    orderIndex = 1;
+    int continueConfirming = 1;
+    
+    while (continueConfirming) {
+        system("cls"); // Clear screen for each confirmation cycle
+        
+        // Display all orders
+        printf("\nCurrent Orders:\n");
+        printf("------------------------------------------------------------------------------------------------\n");
+        printf("| #  | %-20s | %-30s | %-8s | %-10s |\n", "Username", "Book Title", "Quantity", "Status");
+        printf("------------------------------------------------------------------------------------------------\n");
 
-    while (current && orderIndex < confirmIndex) {
-        prev = current;
-        current = current->next;
-        orderIndex++;
+        Order *current = queue->front;
+        int orderIndex = 1;
+        while (current) {
+            printf("| %-2d | %-20s | %-30s | %-8d | %-10s |\n", 
+                  orderIndex, current->username, current->bookTitle, 
+                  current->quantity, current->status);
+            current = current->next;
+            orderIndex++;
+        }
+        printf("------------------------------------------------------------------------------------------------\n");
+
+        // Get order number to confirm
+        int confirmIndex;
+        do {
+            printf("\nEnter order number to confirm (1-%d, 0 to exit): ", orderIndex-1);
+            
+            if (scanf("%d", &confirmIndex) != 1) {
+                printf("Invalid input. Please enter a number.\n");
+                while (getchar() != '\n');
+                continue;
+            }
+
+            if (confirmIndex == 0) {
+                continueConfirming = 0;
+                system("cls");
+                printf("Exiting order confirmation.\n");
+                pauseForUser();
+                return;
+            }
+
+            if (confirmIndex < 1 || confirmIndex >= orderIndex) {
+                printf("Invalid order number. Please try again.\n");
+                continue;
+            }
+
+            break; // Valid input
+        } while (1);
+
+        // Find the selected order
+        current = queue->front;
+        for (int i = 1; i < confirmIndex; i++) {
+            current = current->next;
+        }
+
+        // Confirm action
+        printf("\nOrder Details:\n");
+        printf("----------------------------------------\n");
+        printf("Username: %s\n", current->username);
+        printf("Book Title: %s\n", current->bookTitle);
+        printf("Quantity: %d\n", current->quantity);
+        printf("Current Status: %s\n", current->status);
+        printf("----------------------------------------\n");
+
+        char confirm;
+        printf("\nConfirm this order? (Y/N): ");
+        scanf(" %c", &confirm);
+        getchar(); // Clear newline
+
+        if (tolower(confirm) != 'y') {
+            printf("Confirmation cancelled.\n");
+            pauseForUser();
+            continue;
+        }
+
+        // Update status
+        strcpy(current->status, "Confirmed");
+
+        // Append to history file
+        FILE *historyFile = fopen("file/History_Order.csv", "a");
+        if (historyFile) {
+            fprintf(historyFile, "%s,%s,%d,%s\n", 
+                    current->username, current->bookTitle, 
+                    current->quantity, current->status);
+            fclose(historyFile);
+        }
+
+        // Rewrite order file
+        FILE *orderFile = fopen("file/Orderlist.csv", "w");
+        if (orderFile) {
+            Order *temp = queue->front;
+            while (temp) {
+                fprintf(orderFile, "%s,%s,%d,%s\n", 
+                        temp->username, temp->bookTitle, 
+                        temp->quantity, temp->status);
+                temp = temp->next;
+            }
+            fclose(orderFile);
+        }
+
+        printf("\nOrder #%d confirmed successfully!\n", confirmIndex);
+        
+        // Ask if admin wants to continue
+        char continueChoice;
+        printf("\nConfirm another order? (Y/N): ");
+        scanf(" %c", &continueChoice);
+        getchar(); // Clear newline
+        
+        if (tolower(continueChoice) != 'y') {
+            continueConfirming = 0;
+        }
     }
-
-    if (!current) {
-        printf("Invalid order number.\n");
-        return;
-    }
-
-    // Update the status of the selected order
-    strcpy(current->status, "Confirmed");
-
-    // Append the confirmed order to History_Order.csv
-    FILE *historyFile = fopen("file/History_Order.csv", "a");
-    if (!historyFile) {
-        printf("Error: Could not open History_Order.csv\n");
-        return;
-    }
-
-    fprintf(historyFile, "%s,%s,%d,%s\n", current->username, current->bookTitle, current->quantity, current->status);
-    fclose(historyFile);
-
-    // Rewrite the Orderlist.csv file with the updated status
-    FILE *file = fopen("file/Orderlist.csv", "w");
-    if (!file) {
-        printf("Error: Could not open Orderlist.csv\n");
-        return;
-    }
-
-    Order *temp = queue->front;
-    while (temp) {
-        fprintf(file, "%s,%s,%d,%s\n", temp->username, temp->bookTitle, temp->quantity, temp->status);
-        temp = temp->next;
-    }
-
-    fclose(file);
+    
     system("cls");
-    printf("Order for '%s' by '%s' has been confirmed and added to History_Order.csv.\n", current->bookTitle, current->username);
+    printf("Returning to main menu.\n");
+    pauseForUser();
 }
 
 // Function to display the history of orders from History_Order.csv
@@ -384,6 +438,18 @@ void freeLogQueue(LogQueue *queue) {
     free(queue);
 }
 
+// Function to compare strings case-insensitively
+int caseInsensitiveCompare(const char *str1, const char *str2) {
+    while (*str1 && *str2) {
+        if (tolower(*str1) != tolower(*str2)) {
+            return 0;
+        }
+        str1++;
+        str2++;
+    }
+    return (*str1 == '\0' && *str2 == '\0');
+}
+
 void editStockBook() {
     int choice;
 
@@ -395,277 +461,495 @@ void editStockBook() {
             return;
         }
 
-        printf("----------------------------------------------");
+        // Always show current stock
+        printf("\nCurrent Stock (Sorted by ID):\n");
+        showStock(bookList);
+
+        printf("\n----------------------------------------------");
         printf("\n|Edit Stock Book Menu:                       |\n");
         printf("----------------------------------------------\n");
         printf("|1. Edit Book Details                        |\n");
         printf("|2. Delete Book                              |\n");
         printf("|3. Add Stock                                |\n");
-        printf("|4. Add New Book                             |\n"); // New option
-        printf("|5. Exit to Admin Menu                       |\n");
+        printf("|4. Add New Book                             |\n");
+        printf("|0. Exit to Admin Menu                       |\n");
         printf("----------------------------------------------\n");
-        printf("Enter your choice: ");
+        printf("Enter your choice (0-4): ");
 
-        // Validate input for menu choice
-        if (scanf("%d", &choice) != 1 || choice < 1 || choice > 5) {
-            printf("Invalid input. Please enter a number between 1 and 5.\n");
-            while (getchar() != '\n'); // Clear invalid input from the buffer
+        if (scanf("%d", &choice) != 1 || choice < 0 || choice > 4) {
+            printf("Invalid input. Please enter a number between 0 and 4.\n");
+            while (getchar() != '\n');
+            freeBookList(bookList);
+            system("cls");
             continue;
         }
 
         system("cls");
 
-        switch (choice) {
-            case 1: { // Edit Book Details
-                printf("\nCurrent Stock:\n");
-                showStock(bookList);
-
-                int id;
-                printf("Enter the ID of the book to edit: ");
-                if (scanf("%d", &id) != 1 || id < 0) {
-                    printf("Invalid input. Please enter a valid positive book ID.\n");
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                Book *current = bookList;
-                while (current) {
-                    if (current->id == id) {
-                        printf("Editing book: %s\n", current->title);
-
-                        printf("Enter new title: ");
-                        getchar(); // Clear newline
-                        fgets(current->title, sizeof(current->title), stdin);
-                        current->title[strcspn(current->title, "\n")] = '\0'; // Remove newline
-
-                        printf("Enter new author: ");
-                        fgets(current->author, sizeof(current->author), stdin);
-                        current->author[strcspn(current->author, "\n")] = '\0'; // Remove newline
-
-                        printf("Enter new category: ");
-                        fgets(current->category, sizeof(current->category), stdin);
-                        current->category[strcspn(current->category, "\n")] = '\0'; // Remove newline
-
-                        printf("Enter new quantity: ");
-                        if (scanf("%d", &current->quantity) != 1 || current->quantity < 0) {
-                            printf("Invalid input. Quantity must be a positive number.\n");
-                            while (getchar() != '\n'); // Clear invalid input from the buffer
-                            break;
-                        }
-
-                        printf("Enter new price: ");
-                        if (scanf("%f", &current->price) != 1 || current->price < 0) {
-                            printf("Invalid input. Price must be a positive number.\n");
-                            while (getchar() != '\n'); // Clear invalid input from the buffer
-                            break;
-                        }
-
-                        system("cls");
-                        printf("Book details updated successfully.\n");
-                        break;
-                    }
-                    current = current->next;
-                }
-
-                if (!current) {
-                    printf("Book with ID %d not found.\n", id);
-                }
-                break;
-            }
-            case 2: { // Delete Book
-                printf("\nCurrent Stock:\n");
-                showStock(bookList);
-
-                int id;
-                printf("Enter the ID of the book to delete: ");
-                if (scanf("%d", &id) != 1 || id < 0) {
-                    printf("Invalid input. Please enter a valid positive book ID.\n");
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                Book *current = bookList, *prev = NULL;
-                while (current) {
-                    if (current->id == id) {
-                        if (prev) {
-                            prev->next = current->next;
-                        } else {
-                            bookList = current->next;
-                        }
-                        free(current);
-                        system("cls");
-                        printf("Book with ID %d deleted successfully.\n", id);
-                        break;
-                    }
-                    prev = current;
-                    current = current->next;
-                }
-
-                if (!current) {
-                    printf("Book with ID %d not found.\n", id);
-                }
-                break;
-            }
-            case 3: { // Add Stock
-                printf("\nCurrent Stock:\n");
-                showStock(bookList);
-
-                int id, quantityToAdd;
-                printf("Enter the ID of the book to add stock: ");
-                if (scanf("%d", &id) != 1 || id < 0) {
-                    printf("Invalid input. Please enter a valid positive book ID.\n");
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                printf("Enter quantity to add: ");
-                if (scanf("%d", &quantityToAdd) != 1 || quantityToAdd < 0) {
-                    printf("Invalid input. Quantity must be a positive number.\n");
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                Book *current = bookList;
-                while (current) {
-                    if (current->id == id) {
-                        current->quantity += quantityToAdd;
-                        system("cls");
-                        printf("Stock updated successfully. New stock: %d\n", current->quantity);
-                        break;
-                    }
-                    current = current->next;
-                }
-
-                if (!current) {
-                    printf("Book with ID %d not found.\n", id);
-                }
-                break;
-            }
-            case 4: { // Add New Book
-                printf("\nAdding a New Book:\n");
-
-                Book *newBook = (Book *)malloc(sizeof(Book));
-                if (!newBook) {
-                    printf("Error: Memory allocation failed.\n");
-                    break;
-                }
-
-                printf("Enter new book ID: ");
-                if (scanf("%d", &newBook->id) != 1 || newBook->id < 0) {
-                    printf("Invalid input. Book ID must be a positive number.\n");
-                    free(newBook);
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                getchar(); // Clear newline
-                printf("Enter book title: ");
-                fgets(newBook->title, sizeof(newBook->title), stdin);
-                newBook->title[strcspn(newBook->title, "\n")] = '\0'; // Remove newline
-
-                printf("Enter book author: ");
-                fgets(newBook->author, sizeof(newBook->author), stdin);
-                newBook->author[strcspn(newBook->author, "\n")] = '\0'; // Remove newline
-
-                printf("Enter book category: ");
-                fgets(newBook->category, sizeof(newBook->category), stdin);
-                newBook->category[strcspn(newBook->category, "\n")] = '\0'; // Remove newline
-
-                printf("Enter book quantity: ");
-                if (scanf("%d", &newBook->quantity) != 1 || newBook->quantity < 0) {
-                    printf("Invalid input. Quantity must be a positive number.\n");
-                    free(newBook);
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                printf("Enter book price: ");
-                if (scanf("%f", &newBook->price) != 1 || newBook->price < 0) {
-                    printf("Invalid input. Price must be a positive number.\n");
-                    free(newBook);
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                newBook->next = bookList;
-                bookList = newBook;
-
-                system("cls");
-                printf("New book added successfully.\n");
-                break;
-            }
-            case 5: // Exit to Admin Menu
-                printf("Returning to Admin Menu...\n");
-                freeBookList(bookList);
-                return;
-            default:
-                printf("Invalid choice. Please try again.\n");
-        }
-
-        // Save the updated book list back to the file
-        FILE *file = fopen("file/Book_Stock.csv", "w");
-        if (!file) {
-            printf("Error: Could not open Book_Stock.csv for writing.\n");
+        if (choice == 0) {
             freeBookList(bookList);
             return;
         }
 
-        Book *current = bookList;
-        while (current) {
-            fprintf(file, "%d,%s,%s,%s,%d,%.2f\n", current->id, current->title, current->author, current->category, current->quantity, current->price);
-            current = current->next;
+        // Common variables for all operations
+        int id;
+        Book *current = NULL;
+
+        if (choice != 4) { // All options except Add New Book need ID input
+            printf("\nCurrent Stock (Sorted by ID):\n");
+            showStock(bookList);
+            
+            printf("\nEnter the ID of the book (or 0 to cancel): ");
+            if (scanf("%d", &id) != 1) {
+                printf("Invalid input. Please enter a number.\n");
+                while (getchar() != '\n');
+                freeBookList(bookList);
+                system("cls");
+                continue;
+            }
+
+            if (id == 0) {
+                freeBookList(bookList);
+                system("cls");
+                continue;
+            }
+
+            // Find the book
+            current = bookList;
+            while (current && current->id != id) {
+                current = current->next;
+            }
+
+            if (!current) {
+                printf("Error: Book with ID %d not found.\n", id);
+                pauseForUser();
+                freeBookList(bookList);
+                system("cls");
+                continue;
+            }
         }
 
-        fclose(file);
+        switch (choice) {
+            case 1: { // Edit Book Details
+                int editChoice;
+                do {
+                    printf("\nEditing Book: %s (ID: %d)\n", current->title, current->id);
+                    printf("----------------------------------------------\n");
+                    printf("1. Edit Title\n");
+                    printf("2. Edit Author\n");
+                    printf("3. Edit Category\n");
+                    printf("4. Edit Quantity\n");
+                    printf("5. Edit Price\n");
+                    printf("0. Finish Editing\n");
+                    printf("----------------------------------------------\n");
+                    printf("Enter your choice (0-5): ");
+                    
+                    if (scanf("%d", &editChoice) != 1 || editChoice < 0 || editChoice > 5) {
+                        printf("Invalid input. Please enter a number between 0 and 5.\n");
+                        while (getchar() != '\n');
+                        continue;
+                    }
 
-        printf("\nUpdated Stock:\n");
-        showStock(bookList);
+                    getchar(); // Clear newline
+                    system("cls");
+
+                    switch (editChoice) {
+                        case 1: // Edit Title
+                            printf("Current Title: %s\n", current->title);
+                            printf("Enter new title: ");
+                            fgets(current->title, sizeof(current->title), stdin);
+                            current->title[strcspn(current->title, "\n")] = '\0';
+                            printf("Title updated successfully.\n");
+                            break;
+                        case 2: // Edit Author
+                            printf("Current Author: %s\n", current->author);
+                            printf("Enter new author: ");
+                            fgets(current->author, sizeof(current->author), stdin);
+                            current->author[strcspn(current->author, "\n")] = '\0';
+                            printf("Author updated successfully.\n");
+                            break;
+                        case 3: // Edit Category
+                            printf("Current Category: %s\n", current->category);
+                            printf("Enter new category: ");
+                            fgets(current->category, sizeof(current->category), stdin);
+                            current->category[strcspn(current->category, "\n")] = '\0';
+                            printf("Category updated successfully.\n");
+                            break;
+                        case 4: { // Edit Quantity
+                            int newQuantity;
+                            printf("Current Quantity: %d\n", current->quantity);
+                            printf("Enter new quantity (must be positive): ");
+                            if (scanf("%d", &newQuantity) != 1 || newQuantity <= 0) {
+                                printf("Invalid input. Quantity must be a positive number.\n");
+                                while (getchar() != '\n');
+                                break;
+                            }
+                            current->quantity = newQuantity;
+                            printf("Quantity updated successfully.\n");
+                            break;
+                        }
+                        case 5: { // Edit Price
+                            float newPrice;
+                            printf("Current Price: $%.2f\n", current->price);
+                            printf("Enter new price (must be positive): ");
+                            if (scanf("%f", &newPrice) != 1 || newPrice <= 0) {
+                                printf("Invalid input. Price must be a positive number.\n");
+                                while (getchar() != '\n');
+                                break;
+                            }
+                            current->price = newPrice;
+                            printf("Price updated successfully.\n");
+                            break;
+                        }
+                        case 0:
+                            printf("Finished editing.\n");
+                            break;
+                    }
+                } while (editChoice != 0);
+                break;
+            }
+            case 2: { // Delete Book
+                printf("Are you sure you want to delete '%s' (ID: %d)? (1=Yes, 0=No): ", 
+                      current->title, current->id);
+                int confirm;
+                if (scanf("%d", &confirm) != 1) {
+                    printf("Invalid input.\n");
+                    while (getchar() != '\n');
+                    break;
+                }
+
+                if (confirm == 1) {
+                    // Find and remove the book from the linked list
+                    Book *prev = NULL, *temp = bookList;
+                    while (temp && temp != current) {
+                        prev = temp;
+                        temp = temp->next;
+                    }
+
+                    if (temp) {
+                        if (prev) {
+                            prev->next = temp->next;
+                        } else {
+                            bookList = temp->next;
+                        }
+                        free(temp);
+                        printf("Book deleted successfully.\n");
+                    }
+                } else {
+                    printf("Deletion cancelled.\n");
+                }
+                break;
+            }
+            case 3: { // Add Stock
+                int quantityToAdd;
+                printf("Current stock of '%s': %d\n", current->title, current->quantity);
+                printf("Enter quantity to add (must be positive, 0 to cancel): ");
+                if (scanf("%d", &quantityToAdd) != 1) {
+                    printf("Invalid input.\n");
+                    while (getchar() != '\n');
+                    break;
+                }
+
+                if (quantityToAdd == 0) {
+                    printf("Operation cancelled.\n");
+                    break;
+                }
+
+                if (quantityToAdd <= 0) {
+                    printf("Quantity must be positive.\n");
+                    break;
+                }
+
+                current->quantity += quantityToAdd;
+                printf("Stock updated successfully. New stock: %d\n", current->quantity);
+                break;
+            }
+            case 4: { // Add New Book - Enhanced version with sorted insertion
+                Book *newBook = (Book *)malloc(sizeof(Book));
+                if (!newBook) {
+                    printf("Error: Memory allocation failed.\n");
+                    pauseForUser();
+                    break;
+                }
+
+                // Clear input buffer
+                while (getchar() != '\n');
+
+                // Show current stock before adding
+                printf("\nCurrent Stock (Sorted by ID):\n");
+                showStock(bookList);
+                printf("\n----------------------------------------------\n");
+                printf("|            ADD NEW BOOK                     |\n");
+                printf("----------------------------------------------\n");
+
+                // Get Book ID with validation
+                while (1) {
+                    printf("Enter book ID (must be positive number, 0 to cancel): ");
+                    if (scanf("%d", &newBook->id) != 1) {
+                        printf("Invalid input. Please enter a number.\n");
+                        while (getchar() != '\n');
+                        continue;
+                    }
+
+                    if (newBook->id == 0) {
+                        free(newBook);
+                        printf("Operation cancelled.\n");
+                        pauseForUser();
+                        system("cls");
+                        break;
+                    }
+
+                    if (newBook->id < 0) {
+                        printf("Error: ID must be a positive number.\n");
+                        continue;
+                    }
+
+                    // Check if ID already exists
+                    int idExists = 0;
+                    Book *temp = bookList;
+                    while (temp) {
+                        if (temp->id == newBook->id) {
+                            idExists = 1;
+                            break;
+                        }
+                        temp = temp->next;
+                    }
+
+                    if (idExists) {
+                        printf("Error: Book with ID %d already exists.\n", newBook->id);
+                    } else {
+                        break; // Valid ID
+                    }
+                }
+                if (newBook->id == 0) break; // User cancelled
+
+                // Clear input buffer
+                while (getchar() != '\n');
+
+                // Get Book Title
+                printf("Enter book title: ");
+                fgets(newBook->title, sizeof(newBook->title), stdin);
+                newBook->title[strcspn(newBook->title, "\n")] = '\0';
+                if (strlen(newBook->title) == 0) {
+                    printf("Error: Title cannot be empty.\n");
+                    free(newBook);
+                    pauseForUser();
+                    system("cls");
+                    continue;
+                }
+
+                // Get Book Author
+                printf("Enter book author: ");
+                fgets(newBook->author, sizeof(newBook->author), stdin);
+                newBook->author[strcspn(newBook->author, "\n")] = '\0';
+                if (strlen(newBook->author) == 0) {
+                    printf("Error: Author cannot be empty.\n");
+                    free(newBook);
+                    pauseForUser();
+                    system("cls");
+                    continue;
+                }
+
+                // Get Book Category
+                printf("Enter book category: ");
+                fgets(newBook->category, sizeof(newBook->category), stdin);
+                newBook->category[strcspn(newBook->category, "\n")] = '\0';
+                if (strlen(newBook->category) == 0) {
+                    printf("Error: Category cannot be empty.\n");
+                    free(newBook);
+                    pauseForUser();
+                    system("cls");
+                    continue;
+                }
+
+                // Get Quantity with validation
+                while (1) {
+                    printf("Enter book quantity (must be positive number): ");
+                    if (scanf("%d", &newBook->quantity) != 1) {
+                        printf("Invalid input. Please enter a number.\n");
+                        while (getchar() != '\n');
+                        continue;
+                    }
+
+                    if (newBook->quantity <= 0) {
+                        printf("Error: Quantity must be a positive number.\n");
+                    } else {
+                        break;
+                    }
+                }
+
+                // Get Price with validation
+                while (1) {
+                    printf("Enter book price (must be positive number): $");
+                    if (scanf("%f", &newBook->price) != 1) {
+                        printf("Invalid input. Please enter a number.\n");
+                        while (getchar() != '\n');
+                        continue;
+                    }
+
+                    if (newBook->price <= 0) {
+                        printf("Error: Price must be a positive number.\n");
+                    } else {
+                        break;
+                    }
+                }
+
+                // Insert the new book in sorted order by ID
+                Book *prev = NULL;
+                Book *curr = bookList;
+                
+                while (curr != NULL && curr->id < newBook->id) {
+                    prev = curr;
+                    curr = curr->next;
+                }
+                
+                if (prev == NULL) {
+                    // Insert at beginning
+                    newBook->next = bookList;
+                    bookList = newBook;
+                } else {
+                    // Insert in middle or end
+                    prev->next = newBook;
+                    newBook->next = curr;
+                }
+
+                printf("\nNew book added successfully!\n");
+                printf("\nUpdated Stock (Sorted by ID):\n");
+                showStock(bookList);
+
+                // Save changes to file
+                FILE *file = fopen("file/Book_Stock.csv", "w");
+                if (!file) {
+                    printf("Error: Could not save changes to file.\n");
+                    freeBookList(bookList);
+                    pauseForUser();
+                    system("cls");
+                    continue;
+                }
+
+                Book *temp = bookList;
+                while (temp) {
+                    fprintf(file, "%d,%s,%s,%s,%d,%.2f\n", 
+                           temp->id, temp->title, temp->author, 
+                           temp->category, temp->quantity, temp->price);
+                    temp = temp->next;
+                }
+                fclose(file);
+
+                pauseForUser();
+                system("cls");
+                break;
+            }
+        }
+
+        // Save changes to file for all operations except Add New Book (already saved)
+        if (choice != 4) {
+            FILE *file = fopen("file/Book_Stock.csv", "w");
+            if (!file) {
+                printf("Error: Could not save changes to file.\n");
+                freeBookList(bookList);
+                continue;
+            }
+
+            Book *temp = bookList;
+            while (temp) {
+                fprintf(file, "%d,%s,%s,%s,%d,%.2f\n", 
+                       temp->id, temp->title, temp->author, 
+                       temp->category, temp->quantity, temp->price);
+                temp = temp->next;
+            }
+            fclose(file);
+        }
 
         freeBookList(bookList);
 
-        printf("Changes saved successfully.\n");
-
-    } while (choice != 5);
-
-    printf("Returning to Admin Menu...\n");
+    } while (choice != 0);
 }
 
 void manageCoupons() {
     int choice;
 
     do {
+        system("cls"); // Clear screen at start of each loop
+
+        // Always show current coupons first
+        printf("\nCurrent Coupons:\n");
+        FILE *couponFile = fopen("file/Coupon.csv", "r");
+        if (!couponFile) {
+            printf("Error: Could not open Coupon.csv\n");
+            return;
+        }
+
+        printf("---------------------------------------------------\n");
+        printf("| %-20s | %-10s |\n", "Coupon Code", "Discount (%)");
+        printf("---------------------------------------------------\n");
+
+        char line[256];
+        while (fgets(line, sizeof(line), couponFile)) {
+            char code[50];
+            float discount;
+            sscanf(line, "%[^,],%f", code, &discount);
+            printf("| %-20s | %-10.2f |\n", code, discount);
+        }
+        printf("---------------------------------------------------\n");
+        fclose(couponFile);
+
         printf("\n----------------------------------------------");
         printf("\n|Manage Coupons Menu:                        |\n");
         printf("----------------------------------------------\n");
         printf("|1. Add Coupon                               |\n");
         printf("|2. Edit Coupon                              |\n");
         printf("|3. Delete Coupon                            |\n");
-        printf("|4. Show All Coupons                         |\n");
-        printf("|5. Exit to Admin Menu                       |\n");
+        printf("|0. Exit to Admin Menu                       |\n");
         printf("----------------------------------------------\n");
-        printf("Enter your choice: ");
+        printf("Enter your choice (0-3): ");
 
-        // Validate input for menu choice
-        if (scanf("%d", &choice) != 1 || choice < 1 || choice > 5) {
-            printf("Invalid input. Please enter a number between 1 and 5.\n");
-            while (getchar() != '\n'); // Clear invalid input from the buffer
+        if (scanf("%d", &choice) != 1 || choice < 0 || choice > 3) {
+            printf("Invalid input. Please enter a number between 0 and 3.\n");
+            while (getchar() != '\n');
             continue;
         }
 
-        system("cls");
+        if (choice == 0) {
+            system("cls");
+            return;
+        }
+
+        char code[50];
+        printf("Enter coupon code: ");
+        scanf("%s", code);
+
+        // For Add operation, check if coupon already exists
+        if (choice == 1) {
+            couponFile = fopen("file/Coupon.csv", "r");
+            if (couponFile) {
+                int exists = 0;
+                while (fgets(line, sizeof(line), couponFile)) {
+                    char existingCode[50];
+                    float discount;
+                    sscanf(line, "%[^,],%f", existingCode, &discount);
+                    if (caseInsensitiveCompare(existingCode, code)) {
+                        exists = 1;
+                        break;
+                    }
+                }
+                fclose(couponFile);
+                
+                if (exists) {
+                    printf("Coupon with code '%s' already exists.\n", code);
+                    pauseForUser();
+                    continue;
+                }
+            }
+        }
 
         switch (choice) {
             case 1: { // Add Coupon
-                char code[50];
                 float discount;
-
-                printf("Enter coupon code: ");
-                scanf("%s", code);
-
-                printf("Enter discount percentage (e.g., 10 for 10%%): ");
+                printf("Enter discount percentage (0-100): ");
                 if (scanf("%f", &discount) != 1 || discount < 0 || discount > 100) {
-                    printf("Invalid input. Discount must be a number between 0 and 100.\n");
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
+                    printf("Invalid input. Discount must be between 0 and 100.\n");
+                    while (getchar() != '\n');
                     break;
                 }
 
@@ -677,17 +961,17 @@ void manageCoupons() {
 
                 fprintf(file, "%s,%.2f\n", code, discount);
                 fclose(file);
-                system("cls");
-
                 printf("Coupon added successfully.\n");
                 break;
             }
             case 2: { // Edit Coupon
-                char code[50];
                 float newDiscount;
-
-                printf("Enter the coupon code to edit: ");
-                scanf("%s", code);
+                printf("Enter new discount percentage (0-100): ");
+                if (scanf("%f", &newDiscount) != 1 || newDiscount < 0 || newDiscount > 100) {
+                    printf("Invalid input. Discount must be between 0 and 100.\n");
+                    while (getchar() != '\n');
+                    break;
+                }
 
                 FILE *file = fopen("file/Coupon.csv", "r");
                 if (!file) {
@@ -702,7 +986,6 @@ void manageCoupons() {
                     return;
                 }
 
-                char line[256];
                 int found = 0;
                 while (fgets(line, sizeof(line), file)) {
                     char existingCode[50];
@@ -710,13 +993,7 @@ void manageCoupons() {
 
                     sscanf(line, "%[^,],%f", existingCode, &discount);
 
-                    if (strcmp(existingCode, code) == 0) {
-                        printf("Enter new discount percentage for '%s': ", code);
-                        if (scanf("%f", &newDiscount) != 1 || newDiscount < 0 || newDiscount > 100) {
-                            printf("Invalid input. Discount must be a number between 0 and 100.\n");
-                            while (getchar() != '\n'); // Clear invalid input from the buffer
-                            break;
-                        }
+                    if (caseInsensitiveCompare(existingCode, code)) {
                         fprintf(tempFile, "%s,%.2f\n", code, newDiscount);
                         found = 1;
                     } else {
@@ -730,21 +1007,29 @@ void manageCoupons() {
                 if (found) {
                     remove("file/Coupon.csv");
                     rename("file/Coupon_temp.csv", "file/Coupon.csv");
-                    system("cls");
                     printf("Coupon updated successfully.\n");
+                    
+                    // Show updated table
+                    printf("\nUpdated Coupons:\n");
+                    couponFile = fopen("file/Coupon.csv", "r");
+                    printf("---------------------------------------------------\n");
+                    printf("| %-20s | %-10s |\n", "Coupon Code", "Discount (%)");
+                    printf("---------------------------------------------------\n");
+                    while (fgets(line, sizeof(line), couponFile)) {
+                        char code[50];
+                        float discount;
+                        sscanf(line, "%[^,],%f", code, &discount);
+                        printf("| %-20s | %-10.2f |\n", code, discount);
+                    }
+                    printf("---------------------------------------------------\n");
+                    fclose(couponFile);
                 } else {
                     remove("file/Coupon_temp.csv");
-                    system("cls");
                     printf("Coupon with code '%s' not found.\n", code);
                 }
                 break;
             }
             case 3: { // Delete Coupon
-                char code[50];
-
-                printf("Enter the coupon code to delete: ");
-                scanf("%s", code);
-
                 FILE *file = fopen("file/Coupon.csv", "r");
                 if (!file) {
                     printf("Error: Could not open Coupon.csv\n");
@@ -758,7 +1043,6 @@ void manageCoupons() {
                     return;
                 }
 
-                char line[256];
                 int found = 0;
                 while (fgets(line, sizeof(line), file)) {
                     char existingCode[50];
@@ -766,10 +1050,10 @@ void manageCoupons() {
 
                     sscanf(line, "%[^,],%f", existingCode, &discount);
 
-                    if (strcmp(existingCode, code) == 0) {
-                        found = 1;
-                    } else {
+                    if (!caseInsensitiveCompare(existingCode, code)) {
                         fprintf(tempFile, "%s", line);
+                    } else {
+                        found = 1;
                     }
                 }
 
@@ -779,53 +1063,34 @@ void manageCoupons() {
                 if (found) {
                     remove("file/Coupon.csv");
                     rename("file/Coupon_temp.csv", "file/Coupon.csv");
-                    system("cls");
                     printf("Coupon deleted successfully.\n");
+                    
+                    // Show updated table
+                    printf("\nUpdated Coupons:\n");
+                    couponFile = fopen("file/Coupon.csv", "r");
+                    printf("---------------------------------------------------\n");
+                    printf("| %-20s | %-10s |\n", "Coupon Code", "Discount (%)");
+                    printf("---------------------------------------------------\n");
+                    while (fgets(line, sizeof(line), couponFile)) {
+                        char code[50];
+                        float discount;
+                        sscanf(line, "%[^,],%f", code, &discount);
+                        printf("| %-20s | %-10.2f |\n", code, discount);
+                    }
+                    printf("---------------------------------------------------\n");
+                    fclose(couponFile);
                 } else {
                     remove("file/Coupon_temp.csv");
-                    system("cls");
                     printf("Coupon with code '%s' not found.\n", code);
                 }
                 break;
             }
-            case 4: { // Show All Coupons
-                FILE *file = fopen("file/Coupon.csv", "r");
-                if (!file) {
-                    printf("Error: Could not open Coupon.csv\n");
-                    return;
-                }
-
-                printf("Available Coupons:\n");
-                printf("---------------------------------------------------\n");
-                printf("| %-20s | %-10s |\n", "Coupon Code", "Discount (%)");
-                printf("---------------------------------------------------\n");
-
-                char line[256];
-                while (fgets(line, sizeof(line), file)) {
-                    char code[50];
-                    float discount;
-
-                    // Parse the line to extract coupon details
-                    sscanf(line, "%[^,],%f", code, &discount);
-
-                    // Display the coupon
-                    printf("| %-20s | %-10.2f |\n", code, discount);
-                }
-
-                printf("---------------------------------------------------\n");
-
-                fclose(file);
-                break;
-            }
-            case 5: // Exit to Admin Menu
-                printf("Returning to Admin Menu...\n");
-                return;
-            default:
-                printf("Invalid choice. Please try again.\n");
-                break;
         }
-    } while (choice != 5);
+
+        pauseForUser();
+    } while (choice != 0);
 }
+
 
 // Function to validate admin credentials
 int validateAdminCredentials(const char *username, const char *password) {
@@ -1226,165 +1491,197 @@ void manageBorrowedBooks() {
     int choice;
 
     do {
+        system("cls"); // Clear screen at start
+
+        // Load all borrowed books into memory
+        FILE *file = fopen("file/List_borrow_book.csv", "r");
+        if (!file) {
+            printf("Error: Could not open List_borrow_book.csv\n");
+            pauseForUser();
+            return;
+        }
+
+        // Count records and store them
+        char records[100][256]; // Assuming max 100 records
+        int recordCount = 0;
+        while (fgets(records[recordCount], sizeof(records[0]), file) && recordCount < 100) {
+            // Skip empty or malformed lines
+            if (strlen(records[recordCount]) > 10) { // Minimum valid line length
+                recordCount++;
+            }
+        }
+        fclose(file);
+
+        // Filter and display valid records
+        char validRecords[100][256];
+        char usernames[100][50];
+        char bookTitles[100][100];
+        int quantities[100];
+        int validCount = 0;
+
+        printf("\nCurrent List of Borrowed Books:\n");
+        printf("-------------------------------------------------------------\n");
+        printf("| #  | %-20s | %-30s | %-10s |\n", "Username", "Book Title", "Quantity");
+        printf("-------------------------------------------------------------\n");
+
+        for (int i = 0; i < recordCount; i++) {
+            char username[50] = "";
+            char bookTitle[100] = "";
+            int quantity = 0;
+            
+            if (sscanf(records[i], "%49[^,],%99[^,],%d", username, bookTitle, &quantity) == 3) {
+                if (strlen(username) > 0 && strlen(bookTitle) > 0 && quantity > 0) {
+                    strcpy(validRecords[validCount], records[i]);
+                    strcpy(usernames[validCount], username);
+                    strcpy(bookTitles[validCount], bookTitle);
+                    quantities[validCount] = quantity;
+                    
+                    printf("| %-2d | %-20s | %-30s | %-10d |\n", 
+                          validCount+1, username, bookTitle, quantity);
+                    validCount++;
+                }
+            }
+        }
+
+        if (validCount == 0) {
+            printf("| No valid borrowed books found in records.                |\n");
+        }
+        printf("-------------------------------------------------------------\n");
+
         printf("\n----------------------------------------------");
         printf("\n|          Manage Borrowed Books Menu        |");
         printf("\n----------------------------------------------\n");
-        printf("|  1. View Borrowed Books                    |\n");
-        printf("|  2. Edit Borrowed Book Record              |\n");
-        printf("|  3. Delete Borrowed Book Record            |\n");
-        printf("|  4. Exit to Admin Menu                     |\n");
+        printf("|1. Edit Borrowed Book Record                |\n");
+        printf("|2. Delete Borrowed Book Record              |\n");
+        printf("|0. Exit to Admin Menu                       |\n");
         printf("----------------------------------------------\n");
-        printf("Enter your choice: ");
+        printf("Enter your choice (0-2): ");
 
-        // Validate input for menu choice
-        if (scanf("%d", &choice) != 1 || choice < 1 || choice > 4) {
-            printf("Invalid input. Please enter a number between 1 and 4.\n");
-            while (getchar() != '\n'); // Clear invalid input from the buffer
+        if (scanf("%d", &choice) != 1 || choice < 0 || choice > 2) {
+            printf("Invalid input. Please enter 0, 1, or 2.\n");
+            while (getchar() != '\n');
             continue;
         }
 
-        system("cls");
-
-        switch (choice) {
-            case 1: { // View Borrowed Books
-                showListBorrowBook();
-                break;
-            }
-            case 2: { // Edit Borrowed Book Record
-                // Show the list of borrowed books before editing
-                printf("\nCurrent List of Borrowed Books:\n");
-                showListBorrowBook();
-
-                char username[50], bookTitle[100];
-                int newQuantity;
-
-                printf("Enter the username of the borrower: ");
-                scanf("%s", username);
-
-                printf("Enter the title of the borrowed book: ");
-                getchar(); // Clear newline
-                fgets(bookTitle, sizeof(bookTitle), stdin);
-                bookTitle[strcspn(bookTitle, "\n")] = '\0'; // Remove newline
-
-                printf("Enter the new quantity: ");
-                if (scanf("%d", &newQuantity) != 1 || newQuantity < 0) {
-                    printf("Invalid input. Quantity must be a positive number.\n");
-                    while (getchar() != '\n'); // Clear invalid input from the buffer
-                    break;
-                }
-
-                FILE *file = fopen("file/List_borrow_book.csv", "r");
-                if (!file) {
-                    printf("Error: Could not open List_borrow_book.csv\n");
-                    return;
-                }
-
-                FILE *tempFile = fopen("file/List_borrow_book_temp.csv", "w");
-                if (!tempFile) {
-                    printf("Error: Could not create temporary file.\n");
-                    fclose(file);
-                    return;
-                }
-
-                char line[256];
-                int found = 0;
-                while (fgets(line, sizeof(line), file)) {
-                    char fileUsername[50], fileBookTitle[100];
-                    int fileQuantity;
-
-                    sscanf(line, "%[^,],%[^,],%d", fileUsername, fileBookTitle, &fileQuantity);
-
-                    if (strcmp(fileUsername, username) == 0 && strcmp(fileBookTitle, bookTitle) == 0) {
-                        fprintf(tempFile, "%s,%s,%d\n", username, bookTitle, newQuantity);
-                        found = 1;
-                    } else {
-                        fprintf(tempFile, "%s", line);
-                    }
-                }
-
-                fclose(file);
-                fclose(tempFile);
-
-                if (found) {
-                    remove("file/List_borrow_book.csv");
-                    rename("file/List_borrow_book_temp.csv", "file/List_borrow_book.csv");
-                    printf("Borrowed book record updated successfully.\n");
-                } else {
-                    remove("file/List_borrow_book_temp.csv");
-                    printf("Borrowed book record not found.\n");
-                }
-
-                // Show the updated list of borrowed books
-                showListBorrowBook();
-                break;
-            }
-            case 3: { // Delete Borrowed Book Record
-                // Show the list of borrowed books before deleting
-                printf("\nCurrent List of Borrowed Books:\n");
-                showListBorrowBook();
-
-                char username[50], bookTitle[100];
-
-                printf("Enter the username of the borrower: ");
-                scanf("%s", username);
-
-                printf("Enter the title of the borrowed book: ");
-                getchar(); // Clear newline
-                fgets(bookTitle, sizeof(bookTitle), stdin);
-                bookTitle[strcspn(bookTitle, "\n")] = '\0'; // Remove newline
-
-                FILE *file = fopen("file/List_borrow_book.csv", "r");
-                if (!file) {
-                    printf("Error: Could not open List_borrow_book.csv\n");
-                    return;
-                }
-
-                FILE *tempFile = fopen("file/List_borrow_book_temp.csv", "w");
-                if (!tempFile) {
-                    printf("Error: Could not create temporary file.\n");
-                    fclose(file);
-                    return;
-                }
-
-                char line[256];
-                int found = 0;
-                while (fgets(line, sizeof(line), file)) {
-                    char fileUsername[50], fileBookTitle[100];
-                    int fileQuantity;
-
-                    sscanf(line, "%[^,],%[^,],%d", fileUsername, fileBookTitle, &fileQuantity);
-
-                    if (strcmp(fileUsername, username) == 0 && strcmp(fileBookTitle, bookTitle) == 0) {
-                        found = 1;
-                    } else {
-                        fprintf(tempFile, "%s", line);
-                    }
-                }
-
-                fclose(file);
-                fclose(tempFile);
-
-                if (found) {
-                    remove("file/List_borrow_book.csv");
-                    rename("file/List_borrow_book_temp.csv", "file/List_borrow_book.csv");
-                    printf("Borrowed book record deleted successfully.\n");
-                } else {
-                    remove("file/List_borrow_book_temp.csv");
-                    printf("Borrowed book record not found.\n");
-                }
-
-                // Show the updated list of borrowed books
-                showListBorrowBook();
-                break;
-            }
-            case 4: // Exit to Admin Menu
-                printf("Returning to Admin Menu...\n");
-                return;
-            default:
-                printf("Invalid choice. Please try again.\n");
-                break;
+        if (choice == 0) {
+            system("cls");
+            return;
         }
-    } while (choice != 4);
+
+        if (validCount == 0) {
+            printf("No valid borrowed books to manage.\n");
+            pauseForUser();
+            continue;
+        }
+
+        int recordNum;
+        printf("Enter the record number to %s (1-%d, 0 to cancel): ", 
+              (choice == 1) ? "edit" : "delete", validCount);
+        if (scanf("%d", &recordNum) != 1 || recordNum < 0 || recordNum > validCount) {
+            printf("Invalid record number.\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        if (recordNum == 0) {
+            system("cls");
+            continue;
+        }
+
+        // Adjust to 0-based index
+        recordNum--;
+
+        if (choice == 1) { // Edit
+            int editChoice;
+            do {
+                system("cls");
+                printf("\nEditing Record #%d:\n", recordNum+1);
+                printf("1. Username: %s\n", usernames[recordNum]);
+                printf("2. Book Title: %s\n", bookTitles[recordNum]);
+                printf("3. Quantity: %d\n", quantities[recordNum]);
+                printf("0. Finish Editing\n");
+                printf("Enter field to edit (1-3) or 0 to finish: ");
+
+                if (scanf("%d", &editChoice) != 1 || editChoice < 0 || editChoice > 3) {
+                    printf("Invalid choice.\n");
+                    while (getchar() != '\n');
+                    continue;
+                }
+
+                getchar(); // Clear newline
+                switch (editChoice) {
+                    case 1: // Edit Username
+                        printf("Current username: %s\n", usernames[recordNum]);
+                        printf("Enter new username: ");
+                        fgets(usernames[recordNum], sizeof(usernames[recordNum]), stdin);
+                        usernames[recordNum][strcspn(usernames[recordNum], "\n")] = '\0';
+                        break;
+                    case 2: // Edit Book Title
+                        printf("Current book title: %s\n", bookTitles[recordNum]);
+                        printf("Enter new book title: ");
+                        fgets(bookTitles[recordNum], sizeof(bookTitles[recordNum]), stdin);
+                        bookTitles[recordNum][strcspn(bookTitles[recordNum], "\n")] = '\0';
+                        break;
+                    case 3: // Edit Quantity
+                        printf("Current quantity: %d\n", quantities[recordNum]);
+                        printf("Enter new quantity (must be positive): ");
+                        if (scanf("%d", &quantities[recordNum]) != 1 || quantities[recordNum] <= 0) {
+                            printf("Invalid input. Quantity must be positive.\n");
+                            while (getchar() != '\n');
+                            quantities[recordNum] = 1; // Default to 1 if invalid
+                        }
+                        break;
+                }
+
+                if (editChoice != 0) {
+                    // Update the record in memory
+                    sprintf(validRecords[recordNum], "%s,%s,%d", 
+                           usernames[recordNum], bookTitles[recordNum], quantities[recordNum]);
+                    printf("Field updated successfully.\n");
+                    pauseForUser();
+                    system("cls");
+                }
+            } while (editChoice != 0);
+        }
+        else if (choice == 2) { // Delete
+            printf("Are you sure you want to delete record #%d? (1=Yes, 0=No): ", recordNum+1);
+            int confirm;
+            if (scanf("%d", &confirm) != 1) {
+                printf("Invalid input.\n");
+                while (getchar() != '\n');
+                continue;
+            }
+
+            if (confirm == 1) {
+                // Shift all records after the deleted one
+                for (int i = recordNum; i < validCount-1; i++) {
+                    strcpy(validRecords[i], validRecords[i+1]);
+                    strcpy(usernames[i], usernames[i+1]);
+                    strcpy(bookTitles[i], bookTitles[i+1]);
+                    quantities[i] = quantities[i+1];
+                }
+                validCount--;
+                printf("Record deleted successfully.\n");
+            } else {
+                printf("Deletion cancelled.\n");
+            }
+            pauseForUser();
+        }
+
+        // Save changes back to file
+        file = fopen("file/List_borrow_book.csv", "w");
+        if (!file) {
+            printf("Error: Could not save changes.\n");
+            pauseForUser();
+            return;
+        }
+
+        for (int i = 0; i < validCount; i++) {
+            fprintf(file, "%s\n", validRecords[i]);
+        }
+        fclose(file);
+
+    } while (choice != 0);
 }
 
 int main() {
