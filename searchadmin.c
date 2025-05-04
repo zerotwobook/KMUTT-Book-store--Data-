@@ -294,7 +294,7 @@ void searchBooks() {
         printf("| 2. Search by Title                    |\n");
         printf("| 3. Search by Author                   |\n");
         printf("| 4. Search by Price Range              |\n");
-        printf("| 5. Return to Admin Menu                |\n");
+        printf("| 5. Return to Admin Menu               |\n");
         printf("+---------------------------------------+\n");
         printf("Enter your choice: ");
 
