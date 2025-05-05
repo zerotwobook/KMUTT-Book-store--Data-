@@ -162,6 +162,204 @@ Use the user menu to view books, search for books, and manage orders. Borrow and
 * **Search Optimization**:
 
   * Use advanced data structures (e.g., hash tables) for faster search operations.
+    
+
+## Test Cases for KMUTT Book Store Management System
+
+
+### 1. Login Module (`login.c`)
+
+### Test Case 1: Successful Admin Login
+**Input:**  
+- Username: `admin1`  
+- Password: `password123`  
+**Expected Output:**  
+- Redirects to the admin module (`admin.exe`)
+
+### Test Case 2: Successful User Login
+**Input:**  
+- Username: `user1`  
+- Password: `userpass`  
+**Expected Output:**  
+- Redirects to the user module (`main.exe`)
+
+### Test Case 3: Invalid Login
+**Input:**  
+- Username: `invalidUser`  
+- Password: `wrongPass`  
+**Expected Output:**  
+- Displays: `Invalid username or password.`
+
+### Test Case 4: Create Account with Unique Username
+**Input:**  
+- Username: `newUser`  
+- Password: `newPass123`  
+**Expected Output:**  
+- Displays: `Account created successfully!`  
+- Adds the new account to `Account.csv`
+
+### Test Case 5: Create Account with Existing Username
+**Input:**  
+- Username: `user1`  
+- Password: `newPass123`  
+**Expected Output:**  
+- Displays: `Username 'user1' already exists. Please choose a different username.`
+
+### Test Case 6: Show Books
+**Input:**  
+- Select option 3 from the main menu  
+**Expected Output:**  
+- Displays all books in stock in a tabular format
+
+## 2. User Module (`main.c`)
+
+### Test Case 7: View Books
+**Input:**  
+- Select option 1 from the user menu  
+**Expected Output:**  
+- Displays all books in stock with options to add to the cart
+
+### Test Case 8: Search Books by Title
+**Input:**  
+- Select option 2 from the user menu  
+- Enter title: `Harry Potter`  
+**Expected Output:**  
+- Displays all books with titles starting with "Harry Potter"
+
+### Test Case 9: Borrow a Book
+**Input:**  
+- Select option 5 from the user menu  
+- Enter book title: `The Great Gatsby`  
+- Enter quantity: `2`  
+**Expected Output:**  
+- Displays: `Book borrowed successfully.`  
+- Updates the stock in `Book_Stock.csv`
+
+### Test Case 10: Return a Book
+**Input:**  
+- Select option 6 from the user menu  
+- Enter book title: `The Great Gatsby`  
+**Expected Output:**  
+- Displays: `Book returned successfully.`  
+- Updates the stock in `Book_Stock.csv`
+
+### Test Case 11: Pre-Order a Book
+**Input:**  
+- Select option 3 from the user menu  
+- Enter book title: `New Release`  
+- Enter quantity: `1`  
+**Expected Output:**  
+- Displays: `Pre-order placed successfully.`  
+- Adds the pre-order to `Orderlist.csv`
+
+## 3. Admin Module (`admin.c`)
+
+### Test Case 12: View Books
+**Input:**  
+- Select option 1 from the admin menu  
+**Expected Output:**  
+- Displays all books in stock in a tabular format
+
+### Test Case 13: Edit Book Stock
+**Input:**  
+- Select option 8 from the admin menu  
+- Choose to edit a book  
+- Enter book ID: `101`  
+- Update quantity: `50`  
+**Expected Output:**  
+- Displays: `Book details updated successfully.`  
+- Updates the stock in `Book_Stock.csv`
+
+### Test Case 14: Add a New Book
+**Input:**  
+- Select option 8 from the admin menu  
+- Choose to add a new book  
+- Enter details:  
+  - ID: `999`  
+  - Title: `New Book`  
+  - Author: `Author Name`  
+  - Category: `Fiction`  
+  - Quantity: `10`  
+  - Price: `15.99`  
+**Expected Output:**  
+- Displays: `New book added successfully.`  
+- Adds the new book to `Book_Stock.csv`
+
+### Test Case 15: Generate Report
+**Input:**  
+- Select option 11 from the admin menu  
+**Expected Output:**  
+- Displays a report summarizing total orders, books sold, and revenue
+
+### Test Case 16: Manage Coupons
+**Input:**  
+- Select option 9 from the admin menu  
+- Choose to add a coupon  
+- Enter coupon code: `DISCOUNT10`  
+- Enter discount: `10`  
+**Expected Output:**  
+- Displays: `Coupon added successfully.`  
+- Adds the coupon to `Coupon.csv`
+
+## 4. Search Modules (`search.c` and `searchadmin.c`)
+
+### Test Case 17: Search by Category
+**Input:**  
+- Select option 1 from the search menu  
+- Enter category: `Fiction`  
+**Expected Output:**  
+- Displays all books in the "Fiction" category
+
+### Test Case 18: Search by Price Range
+**Input:**  
+- Select option 4 from the search menu  
+- Enter minimum price: `10`  
+- Enter maximum price: `20`  
+**Expected Output:**  
+- Displays all books priced between $10 and $20
+
+## 5. Error Handling
+
+### Test Case 19: Invalid Menu Choice
+**Input:**  
+- Enter an invalid choice (e.g., `5`) in the main menu  
+**Expected Output:**  
+- Displays: `Invalid choice. Try again.`
+
+### Test Case 20: File Not Found
+**Scenario:**  
+- Delete `Book_Stock.csv` and attempt to view books  
+**Expected Output:**  
+- Displays: `Error: Could not open file/Book_Stock.csv.`
+
+### Test Case 21: Invalid Input for Quantity
+**Input:**  
+- Enter a non-numeric value (e.g., `abc`) for quantity when borrowing a book  
+**Expected Output:**  
+- Displays: `Invalid input. Please enter a valid number.`
+
+## 6. Integration Tests
+
+### Test Case 22: Admin Workflow
+**Steps:**  
+- Login as admin  
+- View books  
+- Edit a book's stock  
+- Add a new book  
+- Generate a report  
+**Expected Output:**  
+- All actions are completed successfully, and the corresponding files are updated
+
+### Test Case 23: User Workflow
+**Steps:**  
+- Login as a user  
+- View books  
+- Add a book to the cart  
+- Checkout  
+- Borrow a book  
+- Return a book  
+**Expected Output:**  
+- All actions are completed successfully, and the corresponding files are updated
 
 ## Contributors
 
