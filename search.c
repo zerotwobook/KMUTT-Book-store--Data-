@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
+//screen clearing 
 void cls() {
     #ifdef _WIN32
         system("cls");
@@ -27,6 +28,7 @@ typedef struct PriceSearchResult {
     struct PriceSearchResult *next;
 } PriceSearchResult;
 
+//Creates tree node for the book
 TreeNode* createTreeNode(int id, char *title, char *author, char *category, int quantity, float price) {
     TreeNode *newNode = (TreeNode *)malloc(sizeof(TreeNode));
     newNode->id = id;
@@ -39,6 +41,7 @@ TreeNode* createTreeNode(int id, char *title, char *author, char *category, int 
     return newNode;
 }
 
+//Inserts a new node to the BST by ID order
 TreeNode* insertTreeNode(TreeNode *root, int id, char *title, char *author, char *category, int quantity, float price) {
     if (root == NULL) {
         return createTreeNode(id, title, author, category, quantity, price);
@@ -53,6 +56,7 @@ TreeNode* insertTreeNode(TreeNode *root, int id, char *title, char *author, char
     return root;
 }
 
+// Prints all books in the tree
 void printAllBooks(TreeNode *root) {
     if (root == NULL) {
         return;
@@ -66,6 +70,7 @@ void printAllBooks(TreeNode *root) {
     printAllBooks(root->right);
 }
 
+// Compares two strings case-insensitively
 int startsWithCaseInsensitive(const char *str, const char *prefix) {
     while (*prefix) {
         if (tolower((unsigned char)*str) != tolower((unsigned char)*prefix)) {
@@ -77,6 +82,7 @@ int startsWithCaseInsensitive(const char *str, const char *prefix) {
     return 1;
 }
 
+// Searches book in the tree on the search type:1.category,2.title,3.author
 void searchTree(TreeNode *root, char *key, int searchType) {
     if (root == NULL) {
         return;
@@ -94,6 +100,7 @@ void searchTree(TreeNode *root, char *key, int searchType) {
     searchTree(root->right, key, searchType);
 }
 
+// Searches book in the tree by price range
 void searchByPriceRange(TreeNode *root, float minPrice, float maxPrice, PriceSearchResult **results) {
     if (root == NULL) {
         return;
@@ -111,6 +118,7 @@ void searchByPriceRange(TreeNode *root, float minPrice, float maxPrice, PriceSea
     searchByPriceRange(root->right, minPrice, maxPrice, results);
 }
 
+// Prints price search results
 void printPriceResults(PriceSearchResult *results) {
     printf("+-------+--------------------------------+----------------------+-----------------+--------+-----------+\n");
     printf("| %-5s | %-30s | %-20s | %-15s | %-6s | %-9s |\n", "ID", "Title", "Author", "Category", "Stock", "Price");
@@ -127,6 +135,7 @@ void printPriceResults(PriceSearchResult *results) {
     printf("+-------+--------------------------------+----------------------+-----------------+--------+-----------+\n");
 }
 
+// Frees price search results 
 void freePriceResults(PriceSearchResult *results) {
     while (results != NULL) {
         PriceSearchResult *temp = results;
@@ -135,6 +144,7 @@ void freePriceResults(PriceSearchResult *results) {
     }
 }
 
+// Sort price search results in ascending/descending order.
 PriceSearchResult* sortResults(PriceSearchResult *results, int ascending) {
     if (results == NULL || results->next == NULL) {
         return results;
@@ -168,6 +178,7 @@ PriceSearchResult* sortResults(PriceSearchResult *results, int ascending) {
     return sorted;
 }
 
+//Gets user input,performs search and displays results
 void priceRangeSearch(TreeNode *root) {
     cls();
     printf("Enter minimum price: ");
@@ -245,6 +256,7 @@ void priceRangeSearch(TreeNode *root) {
     freePriceResults(results);
 }
 
+// Load book from CSV into BST
 TreeNode* loadBooksIntoTree(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -268,6 +280,7 @@ TreeNode* loadBooksIntoTree(const char *filename) {
     return root;
 }
 
+//Free the tree
 void freeTree(TreeNode *root) {
     if (root == NULL) {
         return;
@@ -277,6 +290,7 @@ void freeTree(TreeNode *root) {
     free(root);
 }
 
+//Main search interface with menu options
 void searchBooks() {
     TreeNode *root = loadBooksIntoTree("file/Book_Stock.csv");
     if (root == NULL) {

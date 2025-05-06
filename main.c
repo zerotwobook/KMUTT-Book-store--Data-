@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
+//screen clearing
 void cls()
 {
 #ifdef _WIN32
@@ -12,6 +13,7 @@ void cls()
 #endif
 }
 
+// Function to pause for user input
 void pauseForUser()
 {
     printf("\n[Press Enter to continue]");
@@ -71,6 +73,7 @@ BorrowQueue *createBorrowQueue();
 void enqueueBorrow(BorrowQueue *queue, char *username, char *bookTitle, int quantity);
 Borrow *dequeueBorrow(BorrowQueue *queue);
 
+//Function to create borrow queue
 BorrowQueue *createBorrowQueue()
 {
     BorrowQueue *queue = (BorrowQueue *)malloc(sizeof(BorrowQueue));
@@ -78,6 +81,7 @@ BorrowQueue *createBorrowQueue()
     return queue;
 }
 
+// Function to create book node (for linkedlist)
 Book *createBookNode(char *title, char *author, int quantity)
 {
     Book *newBook = (Book *)malloc(sizeof(Book));
@@ -89,6 +93,7 @@ Book *createBookNode(char *title, char *author, int quantity)
     return newBook;
 }
 
+// Function to load book data from file into a linked list.
 Book *loadBooksFromFile(const char *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -128,6 +133,7 @@ Book *loadBooksFromFile(const char *filename)
     return head;
 }
 
+// Function to load incoming book data from file(similar loadBooksFromFile).
 Book *loadIncomingBooks(const char *filename)
 {
     FILE *file = fopen(filename, "r");
@@ -204,6 +210,7 @@ void removeFromCart(CartItem **cart, const char *title)
     printf("Item '%s' not found in cart.\n", title);
 }
 
+// Function update quantity item in shopping cart.
 void updateCartItem(CartItem *cart, const char *title, int newQuantity, Book *bookList)
 {
     CartItem *current = cart;
@@ -236,6 +243,7 @@ void updateCartItem(CartItem *cart, const char *title, int newQuantity, Book *bo
     printf("Item '%s' not found in cart.\n", title);
 }
 
+// Function edit items in the shopping cart (remove or change quantity)
 void editCart(CartItem **cart, Book *bookList)
 {
     cls();
@@ -500,6 +508,7 @@ void updatePreOrder(OrderQueue *queue, const char *username, const char *bookTit
     printf("Pre-order for '%s' not found.\n", bookTitle);
 }
 
+// Function to manage pre-orders
 void managePreOrders(OrderQueue *queue, Book *incomingBooks)
 {
     cls();
@@ -684,6 +693,7 @@ int validateBookTitle(Book *bookList, const char *title)
     return 0; // Book not found
 }
 
+// Function to get a valid book title from the user
 int getValidBookTitle(Book *bookList, char *title)
 {
     while (1)
@@ -705,6 +715,7 @@ int getValidBookTitle(Book *bookList, char *title)
     }
 }
 
+// Function to get a valid quantity from the user
 int getValidQuantity()
 {
     int quantity;
@@ -722,6 +733,7 @@ int getValidQuantity()
     }
 }
 
+// Function to validate positive integer input
 int validatePositiveInt(int value)
 {
     if (value <= 0)
@@ -732,6 +744,7 @@ int validatePositiveInt(int value)
     return 1;
 }
 
+// Function to validate positive float input
 int validatePositiveFloat(float value)
 {
     if (value <= 0)
@@ -742,6 +755,7 @@ int validatePositiveFloat(float value)
     return 1;
 }
 
+// Function to reload book stock from csv
 void reloadBookStock(Book **bookList)
 {
     if (*bookList != NULL)
@@ -751,6 +765,7 @@ void reloadBookStock(Book **bookList)
     *bookList = loadBooksFromFile("file/Book_Stock.csv");
 }
 
+// Function to print all books in stock
 void displayBooks(Book *head)
 {
     cls();
@@ -794,6 +809,7 @@ int titlesMatch(const char *a, const char *b)
     return strcasecmp(a, b) == 0;
 }
 
+// Function to display incoming books
 void displayIncomingBooks(Book *head)
 {
     cls();
@@ -816,6 +832,7 @@ void displayIncomingBooks(Book *head)
     printf("-------------------------------------------------------------------------------------------------------------\n");
 }
 
+// Function free the book list
 void freeBookList(Book *head)
 {
     Book *current = head;
@@ -827,6 +844,7 @@ void freeBookList(Book *head)
     }
 }
 
+// Function to add a book to the cart
 void addToCart(CartItem **cart, char *title, int quantity, Book *bookList)
 {
     title[strcspn(title, "\n")] = '\0';
@@ -873,6 +891,7 @@ void addToCart(CartItem **cart, char *title, int quantity, Book *bookList)
     }
 }
 
+// Function to view the cart
 void viewCart(CartItem *cart, Book *bookList)
 {
     cls();
@@ -916,6 +935,7 @@ void viewCart(CartItem *cart, Book *bookList)
     pauseForUser();
 }
 
+// Function to apply a coupon code
 float applyCoupon(const char *filename, char *couponCode, float total)
 {
     FILE *file = fopen(filename, "r");
@@ -947,6 +967,7 @@ float applyCoupon(const char *filename, char *couponCode, float total)
     return total;
 }
 
+// Function to checkout the cart
 void checkout(CartItem *cart, Book *bookList)
 {
     cls();
@@ -1143,6 +1164,7 @@ void checkout(CartItem *cart, Book *bookList)
     pauseForUser();
 }
 
+// Function to free the cart
 void freeCart(CartItem *cart)
 {
     CartItem *current = cart;
@@ -1154,6 +1176,7 @@ void freeCart(CartItem *cart)
     }
 }
 
+// Function to create queue
 OrderQueue *createQueue()
 {
     OrderQueue *queue = (OrderQueue *)malloc(sizeof(OrderQueue));
@@ -1161,6 +1184,7 @@ OrderQueue *createQueue()
     return queue;
 }
 
+// Function to enqueue 
 void enqueue(OrderQueue *queue, char *username, char *bookTitle, int quantity)
 {
     Order *newOrder = (Order *)malloc(sizeof(Order));
@@ -1179,6 +1203,7 @@ void enqueue(OrderQueue *queue, char *username, char *bookTitle, int quantity)
     queue->rear = newOrder;
 }
 
+// Function to check process order
 void processOrder(OrderQueue *queue)
 {
     cls();
@@ -1304,6 +1329,7 @@ void processOrder(OrderQueue *queue)
     pauseForUser();
 }
 
+// Function to pre-order a book
 void preOrderBook(OrderQueue *queue, Book *incomingBooks)
 {
     cls();
@@ -1476,6 +1502,7 @@ void preOrderBook(OrderQueue *queue, Book *incomingBooks)
     pauseForUser();
 }
 
+// Function to enqueue borrow queue
 void enqueueBorrow(BorrowQueue *queue, char *username, char *bookTitle, int quantity)
 {
     Borrow *newBorrow = (Borrow *)malloc(sizeof(Borrow));
@@ -1494,6 +1521,7 @@ void enqueueBorrow(BorrowQueue *queue, char *username, char *bookTitle, int quan
     queue->rear = newBorrow;
 }
 
+// Function to dequeue borrow queue
 Borrow *dequeueBorrow(BorrowQueue *queue)
 {
     if (queue->front == NULL)
@@ -1512,6 +1540,7 @@ Borrow *dequeueBorrow(BorrowQueue *queue)
     return temp;
 }
 
+// Function to show options when displaying books
 void displayBooksWithCartOptions(Book *head, CartItem **cart, Book *bookList)
 {
     cls();
@@ -1581,6 +1610,7 @@ void displayBooksWithCartOptions(Book *head, CartItem **cart, Book *bookList)
     } while (choice != 5);
 }
 
+// Function to borrow a book
 void borrowBook(BorrowQueue *borrowQueue, Book **bookListPtr)
 {
     cls();
@@ -1698,6 +1728,7 @@ void borrowBook(BorrowQueue *borrowQueue, Book **bookListPtr)
     pauseForUser();
 }
 
+// Function to return a book
 void returnBook(BorrowQueue *borrowQueue, Book **bookListPtr)
 {
     cls();

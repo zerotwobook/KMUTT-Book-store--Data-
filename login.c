@@ -14,6 +14,8 @@ typedef struct Book {
     struct Book *next;
 } Book;
 
+
+// Create newaccount after verifying username uniqueness.
 void createAccount() {
     char username[50], password[50];
     char line[MAX_LINE];
@@ -77,6 +79,7 @@ void createAccount() {
     fclose(file);
 }
 
+//Check user against admin/user credentials.
 void login() {
     char username[50], password[50];
     char line[MAX_LINE];
@@ -139,6 +142,7 @@ void login() {
     }
 }
 
+//Loads book from CSV into linked list
 Book* loadBooksFromFile(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -166,6 +170,7 @@ Book* loadBooksFromFile(const char *filename) {
     return head;
 }
 
+//Displays all books in stock
 void showBooks() {
     Book *bookList = loadBooksFromFile("file/Book_Stock.csv");
     if (!bookList) {

@@ -55,6 +55,7 @@ typedef struct LogQueue {
     Log *rear;
 } LogQueue;
 
+// Function to pause for user input
 void pauseForUser()
 {
     printf("\n[Press Enter to continue]");
@@ -73,12 +74,14 @@ OrderQueue* createQueue() {
     return queue;
 }
 
+// Function to initialize the history queue
 HistoryQueue* createHistoryQueue() {
     HistoryQueue *queue = (HistoryQueue *)malloc(sizeof(HistoryQueue));
     queue->front = queue->rear = NULL;
     return queue;
 }
 
+// Function to initialize the log queue
 LogQueue* createLogQueue() {
     LogQueue *queue = (LogQueue *)malloc(sizeof(LogQueue));
     queue->front = queue->rear = NULL;
@@ -103,6 +106,7 @@ void enqueue(OrderQueue *queue, char *username, char *bookTitle, int quantity, c
     queue->rear = newOrder;
 }
 
+// Function to enqueue a history
 void enqueueHistory(HistoryQueue *queue, char *username, char *bookTitle, int quantity, char *status) {
     History *newNode = (History *)malloc(sizeof(History));
     strcpy(newNode->username, username);
@@ -120,6 +124,7 @@ void enqueueHistory(HistoryQueue *queue, char *username, char *bookTitle, int qu
     queue->rear = newNode;
 }
 
+// Function to enqueue a log
 void enqueueLog(LogQueue *queue, char *username, char *bookTitle, int quantity, float totalPrice) {
     Log *newNode = (Log *)malloc(sizeof(Log));
     strcpy(newNode->username, username);
@@ -418,6 +423,7 @@ void freeOrderQueue(OrderQueue *queue) {
     free(queue);
 }
 
+// Function to free the history queue
 void freeHistoryQueue(HistoryQueue *queue) {
     History *current = queue->front;
     while (current) {
@@ -428,6 +434,7 @@ void freeHistoryQueue(HistoryQueue *queue) {
     free(queue);
 }
 
+// Function to free the log queue
 void freeLogQueue(LogQueue *queue) {
     Log *current = queue->front;
     while (current) {
@@ -450,6 +457,7 @@ int caseInsensitiveCompare(const char *str1, const char *str2) {
     return (*str1 == '\0' && *str2 == '\0');
 }
 
+// Function to edit stock book
 void editStockBook() {
     int choice;
 
@@ -866,6 +874,7 @@ void editStockBook() {
     } while (choice != 0);
 }
 
+// Function to manage coupons
 void manageCoupons() {
     int choice;
 
@@ -1339,6 +1348,7 @@ void manageAdminMenu() {
     } while (choice != 4);
 }
 
+// Function to load history data from CSV files
 void loadHistoryQueue(const char *filename, HistoryQueue *queue) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -1358,6 +1368,7 @@ void loadHistoryQueue(const char *filename, HistoryQueue *queue) {
     fclose(file);
 }
 
+// Function to load log data from CSV files
 void loadLogQueue(const char *filename, LogQueue *queue) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -1378,6 +1389,7 @@ void loadLogQueue(const char *filename, LogQueue *queue) {
     fclose(file);
 }
 
+// Function to display generate a report 
 void generateReport() {
     HistoryQueue *historyQueue = createHistoryQueue();
     LogQueue *logQueue = createLogQueue();
@@ -1429,6 +1441,7 @@ void generateReport() {
     freeLogQueue(logQueue);
 }
 
+// Function to show the list of borrowed books
 void showListBorrowBook() {
     FILE *file = fopen("file/List_borrow_book.csv", "r");
     if (!file) {
@@ -1458,6 +1471,7 @@ void showListBorrowBook() {
     fclose(file);
 }
 
+// Function to show the list of returned books
 void showListReturnBook() {
     FILE *file = fopen("file/list_return.csv", "r");
     if (!file) {
@@ -1487,6 +1501,7 @@ void showListReturnBook() {
     fclose(file);
 }
 
+// Function to manage borrowed books
 void manageBorrowedBooks() {
     int choice;
 
