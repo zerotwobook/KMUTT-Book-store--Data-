@@ -1,10 +1,7 @@
 john_doe,Book Title 1,2,Pending
 jane_smith,Book Title 2,1,Confirmed
 Porto,Threads of Logic,2,Pending
-porto1,Whispers in Code,2,Pending
-porto2,Whispers in Code,2,Pending
-porto,Whispers in Code,2,Pending
-Porto,r9,2,Confirmed
-porto,r9,2,Confirmed
-porto,Whispers in code,2,Pending
-porto,whispers in code,2,Confirmed
+jane_smith,Book Title 2,1,Confirmed
+john_doe,Book Title 1,2,Pending
+16,Whispers in code,1,Pending
+song,r9,1,Processed
